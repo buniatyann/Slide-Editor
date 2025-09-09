@@ -80,7 +80,7 @@ SlideEditor/
 
 1. **Clone the Repository**:
    ```bash
-   git clone <https://github.com/buniatyann/Slide-Editor>
+   git clone https://github.com/buniatyann/Slide-Editor
    cd SlideEditor
    ```
 
