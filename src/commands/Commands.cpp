@@ -36,7 +36,7 @@ void AddTextCommand::execute() {
     }
 }
 
-AddShapeCommand::AddShapeCommand(ISlideRepository& repo, int slideId, const std::string& shapeType, float scale)
+AddShapeCommand::AddShapeCommand(ISlideRepository& repo, unsigned slideId, const std::string& shapeType, float scale)
     : repo_(repo), slideId_(slideId), shapeType_(shapeType), scale_(scale) {}
 
 void AddShapeCommand::execute() {
@@ -52,6 +52,18 @@ void AddShapeCommand::execute() {
     } 
     else {
         std::cout << "Slide not found: " << slideId_ << std::endl;
+    }
+}
+
+MoveSlideCommand::MoveSlideCommand(ISlideRepository& repo, std::size_t fromIndex, std::size_t toIndex)
+    : repo_(repo), fromIndex_(fromIndex), toIndex_(toIndex) {}
+
+void MoveSlideCommand::execute() {
+    try {
+        repo_.moveSlide(fromIndex_, toIndex_);
+        std::cout << "Moved slide from " << fromIndex_ << " to " << toIndex_ << std::endl;
+    } catch (const std::out_of_range& e) {
+        std::cout << e.what() << std::endl;
     }
 }
 

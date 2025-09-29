@@ -10,9 +10,9 @@
 class CreateSlideCommand : public ICommand {
 public:
     CreateSlideCommand(SlideFactory& factory, ISlideRepository& repo, const std::string& title,
-                        const std::string& content, const std::string& theme);
+                      const std::string& content, const std::string& theme);
     void execute() override;
-    
+
 private:
     SlideFactory& factory_;
     ISlideRepository& repo_;
@@ -24,7 +24,7 @@ private:
 class AddTextCommand : public ICommand {
 public:
     AddTextCommand(ISlideRepository& repo, int slideId, const std::string& textContent, float size,
-                    const std::string& font, const std::string& color, float lineWidth);
+                   const std::string& font, const std::string& color, float lineWidth);
     void execute() override;
 
 private:
@@ -39,7 +39,7 @@ private:
 
 class AddShapeCommand : public ICommand {
 public:
-    AddShapeCommand(ISlideRepository& repo, int slideId, const std::string& shapeType, float scale);
+    AddShapeCommand(ISlideRepository& repo, unsigned slideId, const std::string& shapeType, float scale);
     void execute() override;
 
 private:
@@ -47,6 +47,17 @@ private:
     int slideId_;
     std::string shapeType_;
     float scale_;
+};
+
+class MoveSlideCommand : public ICommand {
+public:
+    MoveSlideCommand(ISlideRepository& repo, std::size_t fromIndex, std::size_t toIndex);
+    void execute() override;
+
+private:
+    ISlideRepository& repo_;
+    std::size_t fromIndex_;
+    std::size_t toIndex_;
 };
 
 class RemoveTextCommand : public ICommand {
@@ -102,5 +113,4 @@ public:
 private:
     ISlideRepository& repo_;
 };
-
 #endif // SLIDEEDITOR_COMMANDS_COMMANDS_HPP

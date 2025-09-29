@@ -2,12 +2,9 @@
 #include <sstream>
 #include <stdexcept>
 
-std::vector<Token> Lexer::tokenize(const std::string& input) const {
+std::vector<Token> Lexer::tokenize(const std::vector<std::string>& words) const {
     std::vector<Token> tokens;
-    std::istringstream iss(input);
-    std::string word;
-
-    while (iss >> word) {
+    for (const auto& word : words) {
         if (isFlag(word)) {
             tokens.emplace_back(Token::Type::Flag, word);
         } 
@@ -21,7 +18,7 @@ std::vector<Token> Lexer::tokenize(const std::string& input) const {
             tokens.emplace_back(Token::Type::Word, word);
         }
     }
-    
+ 
     return tokens;
 }
 
