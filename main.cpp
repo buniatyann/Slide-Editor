@@ -1,4 +1,5 @@
-#include "../include/CommandFactory.hpp"
+#include "include/CommandFactory.hpp"
+#include "include/core/SlideRepository.hpp"
 #include <iostream>
 #include <string>
 #include <sstream>
