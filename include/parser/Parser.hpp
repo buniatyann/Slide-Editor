@@ -12,6 +12,7 @@ class Parser {
 public:
     Parser(SlideFactory& slideFactory, ISlideRepository& repo, JsonSerializer& serializer);
     std::unique_ptr<ICommand> parse(std::istream& input) const;
+    void displayHelp(const std::string& command = "") const;
 
 private:
     enum class State {
@@ -32,7 +33,7 @@ private:
         ERROR
     };
 
-    void displayHelp(const std::string& command = "") const;
+    // void displayHelp(const std::string& command = "") const; initially it was here not in public field
     SlideFactory& slideFactory_;
     ISlideRepository& repo_;
     JsonSerializer& serializer_;
