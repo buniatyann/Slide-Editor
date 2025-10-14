@@ -44,9 +44,11 @@ SlideEditor/
 │   │   └── Commands.hpp
 │   ├── serialization/
 │   │   └── JsonSerializer.hpp
-│   └── parser/
-│       ├── Lexer.hpp
-│       └── Parser.hpp
+│   ├── parser/
+│   │   ├── Lexer.hpp
+│   │   ├── Parser.hpp
+│   │   └── Tokenizer.hpp
+│   └── CommandFactory.hpp
 ├── src/
 │   ├── core/
 │   │   ├── Shape.cpp
@@ -59,11 +61,16 @@ SlideEditor/
 │   │   └── JsonSerializer.cpp
 │   ├── parser/
 │   │   ├── Lexer.cpp
-│   │   └── Parser.cpp
+│   │   ├── Parser.cpp
+│   │   └── Tokenizer.cpp
+│   ├── CommandFactory.cpp
 │   └── main.cpp
-└── external/
-    └── nlohmann/
-        └── json.hpp
+├── external/
+│   └── nlohmann/
+│       └── json.hpp
+├── README.md
+├── Makefile
+└── SlideEditor
 ```
 
 - **include/**: Header files (`.hpp`) with declarations.
@@ -90,7 +97,7 @@ SlideEditor/
 3. **Compile**:
    - Use a C++ compiler (e.g., `g++`) with C++11 or later.
    ```bash
-   g++ -I include -I external src/core/*.cpp src/commands/*.cpp src/serialization/*.cpp src/parser/*.cpp src/main.cpp -o SlideEditor
+   g++ -std=c++20 -Iinclude -Iexternal src/core/*.cpp src/commands/*.cpp src/serialization/*.cpp src/parser/*.cpp src/CommandFactory.cpp src/main.cpp -o SlideEditor
    ```
 
 4. **Run**:
