@@ -1,13 +1,26 @@
-#ifndef SLIDEEDITOR_PARSER_TOKENIZER_HPP
-#define SLIDEEDITOR_PARSER_TOKENIZER_HPP
+#ifndef TOKENIZER_HPP
+#define TOKENIZER_HPP
 
-#include <string>
-#include <vector>
+#include "Token.hpp"
 #include <istream>
 
 class Tokenizer {
 public:
-    std::vector<std::string> tokenize(std::istream& input) const;
+    explicit Tokenizer(std::istream& input);
+    Token nextToken();
+    Token peek() const;
+
+    bool isEOF() const noexcept;
+    bool isError() const noexcept;
+    void reset();
+
+private:
+    std::istream& input_;
+    int lookahead_;
+    bool error_ = false;
+
+    int getChar();
+    void putBack(int ch);
 };
 
-#endif // SLIDEEDITOR_PARSER_TOKENIZER_HPP
+#endif // TOKENIZER_HPP
