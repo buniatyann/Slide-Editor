@@ -29,48 +29,108 @@ The project is organized into modular directories for clarity and maintainabilit
 
 ```
 SlideEditor/
-├── include/
-│   ├── interfaces/
-│   │   ├── IShape.hpp
-│   │   ├── ISlideRepository.hpp
-│   │   ├── ISerializer.hpp
-│   │   └── ICommand.hpp
+├── modules/
 │   ├── core/
-│   │   ├── Shape.hpp
-│   │   ├── Slide.hpp
-│   │   ├── SlideFactory.hpp
-│   │   └── SlideRepository.hpp
-│   ├── commands/
-│   │   └── Commands.hpp
-│   ├── serialization/
-│   │   └── JsonSerializer.hpp
-│   ├── parser/
-│   │   ├── Lexer.hpp
-│   │   ├── Parser.hpp
-│   │   └── Tokenizer.hpp
-│   └── CommandFactory.hpp
-├── src/
-│   ├── core/
-│   │   ├── Shape.cpp
-│   │   ├── Slide.cpp
-│   │   ├── SlideFactory.cpp
-│   │   └── SlideRepository.cpp
-│   ├── commands/
-│   │   └── Commands.cpp
-│   ├── serialization/
-│   │   └── JsonSerializer.cpp
-│   ├── parser/
-│   │   ├── Lexer.cpp
-│   │   ├── Parser.cpp
-│   │   └── Tokenizer.cpp
-│   ├── CommandFactory.cpp
-│   └── main.cpp
+│   │   ├── include/
+│   │   │   └── interfaces/
+│   │   │       ├── IShape.hpp
+│   │   │       ├── ISlide.hpp
+│   │   │       ├── ISlideRepository.hpp
+│   │   │       ├── ICommand.hpp
+│   │   │       ├── ICommandFactory.hpp
+│   │   │       ├── IView.hpp
+│   │   │       ├── IController.hpp
+│   │   │       ├── ISerializer.hpp
+│   │   │       └── IInputStream.hpp
+│   │   └── CMakeLists.txt
+│   │
+│   ├── model/
+│   │   ├── include/
+│   │   │   └── model/
+│   │   │       ├── BoundingBox.hpp
+│   │   │       ├── Slide.hpp
+│   │   │       ├── SlideFactory.hpp
+│   │   │       ├── SlideRepository.hpp
+│   │   │       └── shapes/
+│   │   │           ├── Circle.hpp
+│   │   │           ├── Rectangle.hpp
+│   │   │           ├── Triangle.hpp
+│   │   │           └── Ellipse.hpp
+│   │   ├── src/
+│   │   │   ├── BoundingBox.cpp
+│   │   │   ├── Slide.cpp
+│   │   │   ├── SlideFactory.cpp
+│   │   │   ├── SlideRepository.cpp
+│   │   │   └── shapes/
+│   │   │       ├── Circle.cpp
+│   │   │       ├── Rectangle.cpp
+│   │   │       ├── Triangle.cpp
+│   │   │       └── Ellipse.cpp
+│   │   └── CMakeLists.txt
+│   │
+│   ├── controller/
+│   │   ├── include/
+│   │   │   └── controller/
+│   │   │       ├── CommandController.hpp
+│   │   │       ├── InputHandler.hpp
+│   │   │       ├── parser/
+│   │   │       │   ├── CommandParser.hpp
+│   │   │       │   ├── Lexer.hpp
+│   │   │       │   ├── Token.hpp
+│   │   │       │   └── LexerState.hpp
+│   │   │       └── commands/
+│   │   │           ├── CommandFactory.hpp
+│   │   │           └── Commands.hpp
+│   │   ├── src/
+│   │   │   ├── CommandController.cpp
+│   │   │   ├── InputHandler.cpp
+│   │   │   ├── parser/
+│   │   │   │   ├── CommandParser.cpp
+│   │   │   │   ├── Lexer.cpp
+│   │   │   │   ├── LexerState.cpp
+│   │   │   │   └── Token.cpp
+│   │   │   └── commands/
+│   │   │       ├── CommandFactory.cpp
+│   │   │       └── Commands.cpp
+│   │   └── CMakeLists.txt
+│   │
+│   ├── view/
+│   │   ├── include/
+│   │   │   └── view/
+│   │   │       └── cli/
+│   │   │           └── CliView.hpp
+│   │   ├── src/
+│   │   │   └── cli/
+│   │   │       └── CliView.cpp
+│   │   └── CMakeLists.txt
+│   │
+│   ├── io/
+│   │   ├── include/
+│   │   │   └── io/
+│   │   │       └── InputStream.hpp
+│   │   ├── src/
+│   │   │   └── InputStream.cpp
+│   │   └── CMakeLists.txt
+│   │
+│   └── serialization/
+│       ├── include/
+│       │   └── serialization/
+│       │       └── JsonSerializer.hpp
+│       ├── src/
+│       │   └── JsonSerializer.cpp
+│       └── CMakeLists.txt
+│
+├── app/
+│   ├── src/
+│   │   └── main.cpp
+│   └── CMakeLists.txt
+│
 ├── external/
 │   └── nlohmann/
 │       └── json.hpp
-├── README.md
-├── Makefile
-└── SlideEditor
+│
+├── CMakeLists.txt
+└── README.md
 ```
 
 - **include/**: Header files (`.hpp`) with declarations.
