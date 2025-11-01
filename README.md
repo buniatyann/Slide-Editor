@@ -178,9 +178,7 @@ Run `./SlideEditor` or `help` to list all commands. Use `help <command>` for det
 | Command | Syntax | Description | Flags |
 |---------|--------|-------------|-------|
 | `create` | `create <title> <content> <theme>` | Creates a slide with title, content, and theme. | None |
-| `addtext` | `addtext <id> <text> --size <float> [--font <font>] [--color <color>] [--line-width <float>]` | Adds text to slide `<id>` with specified properties. | `--size <float>` (required), `--font <font>` (default: Arial), `--color <color>` (default: Black), `--line-width <float>` (default: 1.0) |
 | `addshape` | `addshape <id> <type> <scale>` | Adds a shape (Triangle, Circle, Rectangle, Ellipse) to slide `<id>` with scale. | None |
-| `removetext` | `removetext <id> <index>` | Removes text at `<index>` from slide `<id>`. | None |
 | `removeshape` | `removeshape <id> <index>` | Removes shape at `<index>` from slide `<id>`. | None |
 | `save` | `save <file>` | Saves presentation to `<file>` in JSON format. | None |
 | `load` | `load <file>` | Loads presentation from `<file>`. | None |
