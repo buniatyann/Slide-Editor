@@ -1,6 +1,6 @@
 add_library(controller
     src/CommandController.cpp
-    src/InputHandler.cpp          # ADDED
+    src/InputHandler.cpp
     src/commands/Commands.cpp
     src/commands/CommandFactory.cpp
     src/parser/CommandParser.cpp
@@ -18,3 +18,5 @@ target_link_libraries(controller PUBLIC
     model
     io
 )
+
+message(STATUS "Configured module: controller")
