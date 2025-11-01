@@ -1,4 +1,5 @@
 add_library(model
+    src/BoundingBox.cpp
     src/Slide.cpp
     src/SlideRepository.cpp
     src/SlideFactory.cpp
@@ -12,4 +13,8 @@ target_include_directories(model PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(model PUBLIC core)
+target_link_libraries(model PUBLIC 
+    core
+)
+
+message(STATUS "Configured module: model")
