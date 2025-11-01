@@ -10,3 +10,5 @@ target_link_libraries(serialization PUBLIC
     core 
     model
 )
+
+message(STATUS "Configured module: serialization")
