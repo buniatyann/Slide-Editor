@@ -6,9 +6,12 @@
 #include <iostream>
 #include <memory>
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) { // is it okay to use [[maybe_unused]] ??
+int main(int argc, char* argv[]) { 
     using namespace slideEditor;
 
+    std::ignore = argc;
+    std::ignore = argv;
+    
     // Create core components
     auto repository = std::make_unique<model::SlideRepository>();
     auto serializer = std::make_unique<serialization::JsonSerializer>();
