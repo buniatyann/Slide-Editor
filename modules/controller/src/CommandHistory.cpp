@@ -5,66 +5,63 @@ namespace slideEditor::controller {
 CommandHistory::CommandHistory(size_t maxSize) 
     : maxHistorySize_(maxSize) {}
 
-void CommandHistory::push(std::unique_ptr<core::IUndoableCommand> command) {
-    if (!command) {
+void CommandHistory::pushAction(std::unique_ptr<core::IUndoableCommand> action) {
+    if (!action) {
         return;
     }
     
-    redoStack_.clear(); // if command is executed clear the redo stack
-    undoStack_.push_back(std::move(command));
+    redoStack_.clear(); // clear redo stack after action
+    undoStack_.push_back(std::move(action));
     if (undoStack_.size() > maxHistorySize_) {
         undoStack_.erase(undoStack_.begin());
     }
 }
 
-bool CommandHistory::undo() {
-    if (!canUndo()) {
+bool CommandHistory::undoLastAction() {
+    if (!canUndoAction()) {
         return false;
     }
     
-    auto command = std::move(undoStack_.back());
+    auto action = std::move(undoStack_.back());
     undoStack_.pop_back();
-    bool success = command->undo();
+    bool success = action->undo();
     if (success) {
-        // Move to redo stack
-        redoStack_.push_back(std::move(command));
+        redoStack_.push_back(std::move(action));
     } 
     else {
-        // Failed to undo, put it back
-        undoStack_.push_back(std::move(command));
+        undoStack_.push_back(std::move(action));
     }
     
     return success;
 }
 
-bool CommandHistory::redo() {
-    if (!canRedo()) {
+bool CommandHistory::redoLastAction() {
+    if (!canRedoAction()) {
         return false;
     }
     
-    auto command = std::move(redoStack_.back());
+    auto action = std::move(redoStack_.back());
     redoStack_.pop_back();
-    bool success = command->execute(); // re-execute the command;
-    
+    bool success = action->execute();
     if (success) {
-        undoStack_.push_back(std::move(command));
+        undoStack_.push_back(std::move(action));
     } 
     else {
-        redoStack_.push_back(std::move(command));
+        redoStack_.push_back(std::move(action));
     }
     
     return success;
 }
 
-bool CommandHistory::canUndo() const {
+bool CommandHistory::canUndoAction() const {
     return !undoStack_.empty();
 }
 
-bool CommandHistory::canRedo() const {
+bool CommandHistory::canRedoAction() const {
     return !redoStack_.empty();
 }
 
-std::string CommandHistory::getLastUndoDescription() const {
+std::string CommandHistory::getLastActionToUndo() const {
     if (undoStack_.empty()) {
         return "";
     }
@@ -72,7 +69,7 @@ std::string CommandHistory::getLastUndoDescription() const {
     return undoStack_.back()->getDescription();
 }
 
-std::string CommandHistory::getLastRedoDescription() const {
+std::string CommandHistory::getLastActionToRedo() const {
     if (redoStack_.empty()) {
         return "";
     }
@@ -80,16 +77,16 @@ std::string CommandHistory::getLastRedoDescription() const {
     return redoStack_.back()->getDescription();
 }
 
-void CommandHistory::clear() {
+void CommandHistory::clearHistory() {
     undoStack_.clear();
     redoStack_.clear();
 }
 
-size_t CommandHistory::getUndoCount() const {
+size_t CommandHistory::getUndoableActionCount() const {
     return undoStack_.size();
 }
 
-size_t CommandHistory::getRedoCount() const {
+size_t CommandHistory::getRedoableActionCount() const {
     return redoStack_.size();
 }
 
