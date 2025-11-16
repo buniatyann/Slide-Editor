@@ -1,6 +1,7 @@
 #include "controller/CommandController.hpp"
 #include "controller/InputHandler.hpp"
 #include "controller/parser/CommandParser.hpp"
+#include "controller/commands/UndoableCommands.hpp"
 #include "io/InputStream.hpp"
 #include <sstream>
 #include <memory>
@@ -13,21 +14,22 @@ CommandController::CommandController(core::ISlideRepository* repo,
                                      core::IInputStream* input)
     : repository_(repo), serializer_(serializer), view_(view), 
       input_(input), running_(false) {
-    commandFactory_ = std::make_unique<CommandFactory>(repo, serializer, view);
+    commandHistory_ = std::make_unique<CommandHistory>(100);
+    commandFactory_ = std::make_unique<CommandFactory>(
+        repo, serializer, view, commandHistory_.get()
+    );
 }
 
 void CommandController::run() {
     running_ = true;
-    
     view_->displayMessage("SlideEditor - Interactive Mode");
-    view_->displayMessage("Type 'help' for available commands, 'exit' to quit.\n");
-    InputHandler inputHandler(input_); // input handler for input management
+    view_->displayMessage("Type 'help' for available commands, 'exit' to quit.");
+    view_->displayMessage("Commands that support undo/redo: create, addshape, removeshape\n");
+    InputHandler inputHandler(input_);
     while (running_ && inputHandler.hasMoreInput()) {
         view_->displayPrompt();
-        // Read command line using input handler
         auto maybeCommandLine = inputHandler.readCommandLine();
         if (!maybeCommandLine.has_value()) {
-            // EOF or error
             if (inputHandler.isEOF()) {
                 break;
             }
@@ -40,7 +42,6 @@ void CommandController::run() {
         }
         
         std::string commandLine = maybeCommandLine.value();
-        // Skip empty lines
         if (commandLine.empty()) {
             continue;
         }
@@ -60,13 +61,14 @@ bool CommandController::processCommand(const std::string& commandLine) {
 
 bool CommandController::processCommandLine(const std::string& commandLine) {
     io::InputStream stream(commandLine);
+    
     CommandParser parser(&stream);
     ParsedCommand parsed = parser.parseCommand();
     if (!parsed.isValid) {
         view_->displayError(parsed.errorMessage);
-        return true;  // Continue running despite error
+        return true;
     }
-
+    
     auto command = commandFactory_->createCommand(
         parsed.commandName,
         parsed.arguments,
@@ -75,18 +77,28 @@ bool CommandController::processCommandLine(const std::string& commandLine) {
     
     if (!command) {
         view_->displayError("Invalid command or arguments");
-        return true;  // Continue running
+        return true;
     }
     
-    bool success = command->execute();    
+    auto* undoableCmd = dynamic_cast<core::IUndoableCommand*>(command.get()); // check if it's an undoable command
+    bool success = command->execute();
     if (success) {
         view_->displayMessage(command->getResultMessage());
+        if (undoableCmd && 
+            parsed.commandName != "undo" && 
+            parsed.commandName != "redo") {
+            // Transfer ownership to history
+            std::unique_ptr<core::IUndoableCommand> undoablePtr(
+                static_cast<core::IUndoableCommand*>(command.release())
+            );
+
+            commandHistory_->push(std::move(undoablePtr));
+        }
     } 
     else {
         view_->displayError(command->getResultMessage());
     }
     
-    // Return false only for exit command
     return parsed.commandName != "exit";
 }
 
