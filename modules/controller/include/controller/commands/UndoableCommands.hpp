@@ -12,7 +12,7 @@ namespace slideEditor::controller {
 
 class UndoableCreateCommand : public core::IUndoableCommand {
 public:
-    UndoableCreateCommand(core::ISlideRepository* repo,
+    UndoableCreateCommand(std::shared_ptr<core::ISlideRepository> repo,
                           std::string title,
                           std::string content,
                           std::string theme);
@@ -25,7 +25,7 @@ public:
     bool wasSuccessful() const override;
 
 private:
-    core::ISlideRepository* repository_;
+    std::shared_ptr<core::ISlideRepository> repository_;
     std::string title_;
     std::string content_;
     std::string theme_;
@@ -38,7 +38,7 @@ private:
 
 class UndoableAddShapeCommand : public core::IUndoableCommand {
 public:
-    UndoableAddShapeCommand(core::ISlideRepository* repo,
+    UndoableAddShapeCommand(std::shared_ptr<core::ISlideRepository> repo,
                             int slideId,
                             std::string shapeType,
                             double scale);
@@ -51,7 +51,7 @@ public:
     bool wasSuccessful() const override;
 
 private:
-    core::ISlideRepository* repository_;
+    std::shared_ptr<core::ISlideRepository> repository_;
     int slideId_;
     std::string shapeType_;
     double scale_;
@@ -64,7 +64,7 @@ private:
 
 class UndoableRemoveShapeCommand : public core::IUndoableCommand {
 public:
-    UndoableRemoveShapeCommand(core::ISlideRepository* repo,
+    UndoableRemoveShapeCommand(std::shared_ptr<core::ISlideRepository> repo,
                                int slideId,
                                size_t shapeIndex);
     
@@ -76,7 +76,7 @@ public:
     bool wasSuccessful() const override;
 
 private:
-    core::ISlideRepository* repository_;
+    std::shared_ptr<core::ISlideRepository> repository_;
     int slideId_;
     size_t shapeIndex_;
     

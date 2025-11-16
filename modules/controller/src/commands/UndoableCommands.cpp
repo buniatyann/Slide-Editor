@@ -5,11 +5,11 @@
 namespace slideEditor::controller {
 
 // ========================================
-// UndoableCreateCommand
+// UndoableCreateCommand (Action)
 // ========================================
 
 UndoableCreateCommand::UndoableCreateCommand(
-    core::ISlideRepository* repo,
+    std::shared_ptr<core::ISlideRepository> repo,
     std::string title,
     std::string content,
     std::string theme)
@@ -25,6 +25,7 @@ bool UndoableCreateCommand::execute() {
     if (!repository_) {
         success_ = false;
         message_ = "Error: Repository not available";
+        
         return false;
     }
     
@@ -34,7 +35,7 @@ bool UndoableCreateCommand::execute() {
         executed_ = true;
         success_ = true;
         std::ostringstream oss;
-        oss << "Slide created successfully with ID: " << createdId_;
+        oss << "[ACTION] Slide created successfully with ID: " << createdId_;
         message_ = oss.str();
 
         return true;
@@ -54,9 +55,8 @@ bool UndoableCreateCommand::undo() {
     bool removed = repository_->removeSlide(createdId_);
     if (removed) {
         std::ostringstream oss;
-        oss << "Undone: Removed slide " << createdId_;
+        oss << "[UNDO ACTION] Removed slide " << createdId_;
         message_ = oss.str();
-
         return true;
     }
     
@@ -83,11 +83,11 @@ bool UndoableCreateCommand::wasSuccessful() const {
 }
 
 // ========================================
-// UndoableAddShapeCommand
+// UndoableAddShapeCommand (ACTION)
 // ========================================
 
 UndoableAddShapeCommand::UndoableAddShapeCommand(
-    core::ISlideRepository* repo,
+    std::shared_ptr<core::ISlideRepository> repo,
     int slideId,
     std::string shapeType,
     double scale)
@@ -121,7 +121,6 @@ bool UndoableAddShapeCommand::execute() {
     if (!shape) {
         success_ = false;
         message_ = "Error: Invalid shape type '" + shapeType_ + "'";
-
         return false;
     }
     
@@ -131,7 +130,7 @@ bool UndoableAddShapeCommand::execute() {
     executed_ = true;
     success_ = true;
     std::ostringstream oss;
-    oss << "Shape '" << shapeType_ << "' added to slide " << slideId_;
+    oss << "[ACTION] Shape '" << shapeType_ << "' added to slide " << slideId_;
     message_ = oss.str();
 
     return true;
@@ -150,7 +149,7 @@ bool UndoableAddShapeCommand::undo() {
     bool removed = slide->removeShape(addedShapeIndex_);
     if (removed) {
         std::ostringstream oss;
-        oss << "Undone: Removed shape from slide " << slideId_;
+        oss << "[UNDO ACTION] Removed shape from slide " << slideId_;
         message_ = oss.str();
     
         return true;
@@ -179,11 +178,11 @@ bool UndoableAddShapeCommand::wasSuccessful() const {
 }
 
 // ========================================
-// UndoableRemoveShapeCommand
+// UndoableRemoveShapeCommand (ACTION)
 // ========================================
 
 UndoableRemoveShapeCommand::UndoableRemoveShapeCommand(
-    core::ISlideRepository* repo,
+    std::shared_ptr<core::ISlideRepository> repo,
     int slideId,
     size_t shapeIndex)
     : repository_(repo),
@@ -196,7 +195,6 @@ bool UndoableRemoveShapeCommand::execute() {
     if (!repository_) {
         success_ = false;
         message_ = "Error: Repository not available";
-    
         return false;
     }
     
@@ -206,7 +204,7 @@ bool UndoableRemoveShapeCommand::execute() {
         std::ostringstream oss;
         oss << "Error: Slide with ID " << slideId_ << " not found";
         message_ = oss.str();
-    
+
         return false;
     }
     
@@ -215,29 +213,26 @@ bool UndoableRemoveShapeCommand::execute() {
         std::ostringstream oss;
         oss << "Error: Shape index " << shapeIndex_ << " out of range";
         message_ = oss.str();
-    
         return false;
     }
     
-    // Clone the shape before removing (for undo)
-    const auto& shapes = slide->getShapes();
+    const auto& shapes = slide->getShapes();  // Clone the shpa before removing (for undo)
     removedShape_ = shapes[shapeIndex_]->clone();
-    
     bool removed = slide->removeShape(shapeIndex_);
     if (removed) {
         executed_ = true;
         success_ = true;
         std::ostringstream oss;
-        oss << "Shape at index " << shapeIndex_ 
+        oss << "[ACTION] Shape at index " << shapeIndex_ 
             << " removed from slide " << slideId_;
         message_ = oss.str();
-    
+
         return true;
     }
     
     success_ = false;
     message_ = "Error: Failed to remove shape";
-    
+
     return false;
 }
 
@@ -251,14 +246,11 @@ bool UndoableRemoveShapeCommand::undo() {
         return false;
     }
     
-    // Re-add the shape (need to insert at original position)
-    // For simplicity, we'll add at the end
-    // TODO: Enhance to insert at exact position
-    slide->addShape(removedShape_->clone());
+    slide->addShape(removedShape_->clone()); // re-add shape
     std::ostringstream oss;
-    oss << "Undone: Restored shape to slide " << slideId_;
+    oss << "[UNDO ACTION] Restored shape to slide " << slideId_;
     message_ = oss.str();
-    
+
     return true;
 }
 
@@ -280,5 +272,6 @@ std::string UndoableRemoveShapeCommand::getResultMessage() const {
 bool UndoableRemoveShapeCommand::wasSuccessful() const {
     return success_;
 }
+
 
 } // namespace slideEditor::core
