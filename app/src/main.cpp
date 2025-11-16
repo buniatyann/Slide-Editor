@@ -12,25 +12,27 @@ int main(int argc, char* argv[]) {
     std::ignore = argc;
     std::ignore = argv;
     
-    // Create core components
-    auto repository = std::make_unique<model::SlideRepository>();
-    auto serializer = std::make_unique<serialization::JsonSerializer>();
-    auto view = std::make_unique<view::CliView>(std::cout);
-    auto inputStream = std::make_unique<io::InputStream>(std::cin);
+    // core components
+    auto repository = std::make_shared<model::SlideRepository>();
+    auto serializer = std::make_shared<serialization::JsonSerializer>();
+    auto view = std::make_shared<view::CliView>(std::cout);
+    auto inputStream = std::make_shared<io::InputStream>(std::cin);
     
+    // controller
     controller::CommandController controller(
-        repository.get(),
-        serializer.get(),
-        view.get(),
-        inputStream.get()
+        repository,
+        serializer,
+        view,
+        inputStream
     );
     
+    // interactive mode
     try {
         controller.run();
     } catch (const std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << std::endl;
         return 1;
     }
-    
+
     return 0;
 }
