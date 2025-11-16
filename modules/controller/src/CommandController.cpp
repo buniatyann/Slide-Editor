@@ -8,15 +8,15 @@
 
 namespace slideEditor::controller {
 
-CommandController::CommandController(core::ISlideRepository* repo,
-                                     core::ISerializer* serializer,
-                                     core::IView* view,
-                                     core::IInputStream* input)
+CommandController::CommandController(std::shared_ptr<core::ISlideRepository> repo,
+                                     std::shared_ptr<core::ISerializer> serializer,
+                                     std::shared_ptr<core::IView> view,
+                                     std::shared_ptr<core::IInputStream> input)
     : repository_(repo), serializer_(serializer), view_(view), 
       input_(input), running_(false) {
-    commandHistory_ = std::make_unique<CommandHistory>(100);
+    commandHistory_ = std::make_shared<CommandHistory>(100);
     commandFactory_ = std::make_unique<CommandFactory>(
-        repo, serializer, view, commandHistory_.get()
+        repo, serializer, view, commandHistory_
     );
 }
 
@@ -24,8 +24,11 @@ void CommandController::run() {
     running_ = true;
     view_->displayMessage("SlideEditor - Interactive Mode");
     view_->displayMessage("Type 'help' for available commands, 'exit' to quit.");
-    view_->displayMessage("Commands that support undo/redo: create, addshape, removeshape\n");
-    InputHandler inputHandler(input_);
+    view_->displayMessage("═══════════════════════════════════════════════════");
+    view_->displayMessage("ACTIONS (can be undone): create, addshape, removeshape");
+    view_->displayMessage("META-COMMANDS: undo, redo");
+    view_->displayMessage("═══════════════════════════════════════════════════\n");
+    InputHandler inputHandler(input_.get());
     while (running_ && inputHandler.hasMoreInput()) {
         view_->displayPrompt();
         auto maybeCommandLine = inputHandler.readCommandLine();
@@ -60,9 +63,8 @@ bool CommandController::processCommand(const std::string& commandLine) {
 }
 
 bool CommandController::processCommandLine(const std::string& commandLine) {
-    io::InputStream stream(commandLine);
-    
-    CommandParser parser(&stream);
+    auto stream = std::make_shared<io::InputStream>(commandLine);
+    CommandParser parser(stream.get());
     ParsedCommand parsed = parser.parseCommand();
     if (!parsed.isValid) {
         view_->displayError(parsed.errorMessage);
@@ -80,19 +82,21 @@ bool CommandController::processCommandLine(const std::string& commandLine) {
         return true;
     }
     
-    auto* undoableCmd = dynamic_cast<core::IUndoableCommand*>(command.get()); // check if it's an undoable command
-    bool success = command->execute();
+    bool success = command->execute(); // execute the command
     if (success) {
         view_->displayMessage(command->getResultMessage());
-        if (undoableCmd && 
-            parsed.commandName != "undo" && 
-            parsed.commandName != "redo") {
-            // Transfer ownership to history
-            std::unique_ptr<core::IUndoableCommand> undoablePtr(
-                static_cast<core::IUndoableCommand*>(command.release())
-            );
 
-            commandHistory_->push(std::move(undoablePtr));
+        // If it's an ACTION (not undo/redo meta-command), add to history
+        if (command->isAction()) {
+            auto* undoableCmd = dynamic_cast<core::IUndoableCommand*>(command.get());
+            if (undoableCmd) {
+                // Transfer ownership to history
+                std::unique_ptr<core::IUndoableCommand> undoablePtr(
+                    static_cast<core::IUndoableCommand*>(command.release())
+                );
+    
+                commandHistory_->pushAction(std::move(undoablePtr));
+            }
         }
     } 
     else {

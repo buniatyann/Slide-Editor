@@ -15,25 +15,25 @@ namespace slideEditor::controller {
 
 class CommandController : public core::IController {
 public:
-    CommandController(core::ISlideRepository* repo,
-                     core::ISerializer* serializer,
-                     core::IView* view,
-                     core::IInputStream* input);
+    CommandController(std::shared_ptr<core::ISlideRepository> repo,
+                     std::shared_ptr<core::ISerializer> serializer,
+                     std::shared_ptr<core::IView> view,
+                     std::shared_ptr<core::IInputStream> input);
     
     void run() override;
     bool processCommand(const std::string& commandLine) override;
 
 private:
-    core::ISlideRepository* repository_;
-    core::ISerializer* serializer_;
-    core::IView* view_;
-    core::IInputStream* input_;
-
+    std::shared_ptr<core::ISlideRepository> repository_;
+    std::shared_ptr<core::ISerializer> serializer_;
+    std::shared_ptr<core::IView> view_;
+    std::shared_ptr<core::IInputStream> input_;
+    
+    std::shared_ptr<CommandHistory> commandHistory_;
     std::unique_ptr<CommandFactory> commandFactory_;
-    std::unique_ptr<CommandHistory> commandHistory_;
+    
     bool running_;
     
-    // Helper method
     bool processCommandLine(const std::string& commandLine);
 };
 
