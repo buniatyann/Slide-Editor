@@ -72,6 +72,12 @@ ParsedCommand CommandParser::parseCommand() {
     else if (cmdName == "display") {
         return parseDisplay();
     } 
+    else if (cmdName == "undo") {
+        return parseUndo();  
+    } 
+    else if (cmdName == "redo") {
+        return parseRedo();  
+    }
     else if (cmdName == "help") {
         return parseHelp();
     } 
@@ -243,6 +249,24 @@ ParsedCommand CommandParser::parseHelp() {
 ParsedCommand CommandParser::parseExit() {
     ParsedCommand result;
     result.commandName = "exit";
+    result.isValid = true;
+
+    return result;
+}
+
+// No arguments
+ParsedCommand CommandParser::parseUndo() {
+    ParsedCommand result;
+    result.commandName = "undo";
+    result.isValid = true;
+
+    return result;
+}
+
+// No arguments
+ParsedCommand CommandParser::parseRedo() {
+    ParsedCommand result;
+    result.commandName = "redo";
     result.isValid = true;
 
     return result;
