@@ -47,12 +47,12 @@ public:
 
 private:
     core::ISlideRepository* repository_;
-    int slideId_;
     std::string shapeType_;
     double scale_;
+    int slideId_;
     
-    bool success_;
     std::string message_;
+    bool success_;
 };
 
 // Remove shape command
@@ -68,88 +68,91 @@ public:
 
 private:
     core::ISlideRepository* repository_;
-    int slideId_;
     size_t shapeIndex_;
+    int slideId_;
     
-    bool success_;
     std::string message_;
+    bool success_;
 };
 
 // Save command
 class SaveCommand : public core::ICommand {
 public:
-    SaveCommand(core::ISlideRepository* repo,
-                core::ISerializer* serializer,
+    SaveCommand(std::shared_ptr<core::ISlideRepository> repo,
+                std::shared_ptr<core::ISerializer> serializer,
                 std::string filename);
     
     bool execute() override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
+    bool isAction() const override { return false; }
+
 private:
-    core::ISlideRepository* repository_;
-    core::ISerializer* serializer_;
+    std::shared_ptr<core::ISlideRepository> repository_;
+    std::shared_ptr<core::ISerializer> serializer_;
     std::string filename_;
-    
-    bool success_;
     std::string message_;
+    bool success_;
 };
 
 // Load command
 class LoadCommand : public core::ICommand {
 public:
-    LoadCommand(core::ISlideRepository* repo,
-                core::ISerializer* serializer,
+    LoadCommand(std::shared_ptr<core::ISlideRepository> repo,
+                std::shared_ptr<core::ISerializer> serializer,
                 std::string filename);
     
     bool execute() override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
+    bool isAction() const override { return false; }
 
 private:
-    core::ISlideRepository* repository_;
-    core::ISerializer* serializer_;
+    std::shared_ptr<core::ISlideRepository> repository_;
+    std::shared_ptr<core::ISerializer> serializer_;
     std::string filename_;
-    
-    bool success_;
     std::string message_;
+    bool success_;
 };
 
 // Display command
 class DisplayCommand : public core::ICommand {
 public:
-    DisplayCommand(core::ISlideRepository* repo,
-                   core::IView* view);
+    DisplayCommand(std::shared_ptr<core::ISlideRepository> repo,
+                   std::shared_ptr<core::IView> view);
     
     bool execute() override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
-
-private:
-    core::ISlideRepository* repository_;
-    core::IView* view_;
+    bool isAction() const override { return false; }
     
-    bool success_;
+private:
+    std::shared_ptr<core::ISlideRepository> repository_;
+    std::shared_ptr<core::IView> view_;
+    
     std::string message_;
+    bool success_;
 };
 
 // Help command
 class HelpCommand : public core::ICommand {
 public:
     HelpCommand(core::ICommandFactory* factory,
-                core::IView* view,
+                std::shared_ptr<core::IView> view,
                 std::string specificCommand = "");
     
     bool execute() override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
+    bool isAction() const override { return false; }
 
 private:
-    core::ICommandFactory* factory_;
-    core::IView* view_;
+    core::ICommandFactory* factory_;  // Can it stay as raw pointer (non-owning) ?
+    std::shared_ptr<core::IView> view_;
     std::string specificCommand_;
     
-    bool success_;
     std::string message_;
+    bool success_;
 };
 
 // Exit command
@@ -160,10 +163,11 @@ public:
     bool execute() override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
+    bool isAction() const override { return false; }
 
 private:
-    bool success_;
     std::string message_;
+    bool success_;
 };
 
 } // namespace slideEditor::controller

@@ -1,5 +1,5 @@
 #include "controller/commands/Commands.hpp"
-#include "model/SlideFactory.hpp"
+#include "../../model/SlideFactory.hpp"
 #include <sstream>
 
 namespace slideEditor::controller {
@@ -167,8 +167,8 @@ bool RemoveShapeCommand::wasSuccessful() const {
 
 // ===== SaveCommand =====
 
-SaveCommand::SaveCommand(core::ISlideRepository* repo,
-                         core::ISerializer* serializer,
+SaveCommand::SaveCommand(std::shared_ptr<core::ISlideRepository> repo,
+                         std::shared_ptr<core::ISerializer> serializer,
                          std::string filename)
     : repository_(repo), serializer_(serializer),
       filename_(std::move(filename)), success_(false) {}
@@ -177,15 +177,14 @@ bool SaveCommand::execute() {
     if (!repository_ || !serializer_) {
         success_ = false;
         message_ = "Error: Required components not available";
-    
+
         return false;
     }
     
-    bool saved = serializer_->save(repository_, filename_);
+    bool saved = serializer_->save(repository_.get(), filename_);
     if (saved) {
         success_ = true;
         message_ = "Presentation saved to '" + filename_ + "'";
-
         return true;
     }
     
@@ -205,8 +204,8 @@ bool SaveCommand::wasSuccessful() const {
 
 // ===== LoadCommand =====
 
-LoadCommand::LoadCommand(core::ISlideRepository* repo,
-                         core::ISerializer* serializer,
+LoadCommand::LoadCommand(std::shared_ptr<core::ISlideRepository> repo,
+                         std::shared_ptr<core::ISerializer> serializer,
                          std::string filename)
     : repository_(repo), serializer_(serializer),
       filename_(std::move(filename)), success_(false) {}
@@ -215,15 +214,14 @@ bool LoadCommand::execute() {
     if (!repository_ || !serializer_) {
         success_ = false;
         message_ = "Error: Required components not available";
-    
+
         return false;
     }
     
-    bool loaded = serializer_->load(repository_, filename_);
+    bool loaded = serializer_->load(repository_.get(), filename_);
     if (loaded) {
         success_ = true;
         message_ = "Presentation loaded from '" + filename_ + "'";
-
         return true;
     }
     
@@ -243,23 +241,22 @@ bool LoadCommand::wasSuccessful() const {
 
 // ===== DisplayCommand =====
 
-DisplayCommand::DisplayCommand(core::ISlideRepository* repo,
-                               core::IView* view)
+DisplayCommand::DisplayCommand(std::shared_ptr<core::ISlideRepository> repo,
+                               std::shared_ptr<core::IView> view)
     : repository_(repo), view_(view), success_(false) {}
 
 bool DisplayCommand::execute() {
     if (!repository_ || !view_) {
         success_ = false;
         message_ = "Error: Required components not available";
-    
+
         return false;
     }
     
-    view_->displaySlides(repository_);
-    
+    view_->displaySlides(repository_.get());
     success_ = true;
     message_ = "Slides displayed";
-    
+
     return true;
 }
 
@@ -274,7 +271,7 @@ bool DisplayCommand::wasSuccessful() const {
 // ===== HelpCommand =====
 
 HelpCommand::HelpCommand(core::ICommandFactory* factory,
-                         core::IView* view,
+                         std::shared_ptr<core::IView> view,
                          std::string specificCommand)
     : factory_(factory), view_(view),
       specificCommand_(std::move(specificCommand)),
@@ -284,12 +281,12 @@ bool HelpCommand::execute() {
     if (!factory_ || !view_) {
         success_ = false;
         message_ = "Error: Required components not available";
-    
+        
         return false;
     }
     
+    // Show all commands
     if (specificCommand_.empty()) {
-        // Show all commands
         std::string helpText = factory_->getAllCommandsHelp();
         view_->displayHelp(helpText);
         message_ = "Help displayed";
@@ -326,6 +323,7 @@ ExitCommand::ExitCommand() : success_(false) {}
 bool ExitCommand::execute() {
     success_ = true;
     message_ = "Exiting...";
+    
     return true;
 }
 
