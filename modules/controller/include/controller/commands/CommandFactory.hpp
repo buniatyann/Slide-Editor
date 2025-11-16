@@ -5,6 +5,7 @@
 #include "interfaces/ISlideRepository.hpp"
 #include "interfaces/ISerializer.hpp"
 #include "interfaces/IView.hpp"
+#include "CommandHistory.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -16,7 +17,8 @@ class CommandFactory : public core::ICommandFactory {
 public:
     CommandFactory(core::ISlideRepository* repo,
                    core::ISerializer* serializer,
-                   core::IView* view);
+                   core::IView* view,
+                   CommandHistory* history);
     
     std::unique_ptr<core::ICommand> createCommand(
         const std::string& commandName,
@@ -32,6 +34,7 @@ private:
     core::ISlideRepository* repository_;
     core::ISerializer* serializer_;
     core::IView* view_;
+    CommandHistory* history_;
     
     std::map<std::string, std::string> helpTexts_;
     
