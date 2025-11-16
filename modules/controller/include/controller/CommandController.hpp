@@ -7,6 +7,7 @@
 #include "interfaces/IView.hpp"
 #include "interfaces/IInputStream.hpp"
 #include "controller/commands/CommandFactory.hpp"
+#include "controller/CommandHistory.hpp"
 #include <memory>
 #include <string>
 
@@ -29,6 +30,7 @@ private:
     core::IInputStream* input_;
 
     std::unique_ptr<CommandFactory> commandFactory_;
+    std::unique_ptr<CommandHistory> commandHistory_;
     bool running_;
     
     // Helper method
