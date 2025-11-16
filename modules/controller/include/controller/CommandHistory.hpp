@@ -16,25 +16,24 @@ class CommandHistory {
 public:
     explicit CommandHistory(size_t maxSize = 100);
     
-    void push(std::unique_ptr<core::IUndoableCommand> command); // Add command to the execution history
-    bool undo();
-    bool redo();
+    void pushAction(std::unique_ptr<core::IUndoableCommand> action);
+    bool undoLastAction();
+    bool redoLastAction();
     
-    bool canUndo() const;
-    bool canRedo() const;
+    bool canUndoAction() const;
+    bool canRedoAction() const;
     
-    std::string getLastUndoDescription() const;
-    std::string getLastRedoDescription() const;
+    std::string getLastActionToUndo() const;
+    std::string getLastActionToRedo() const;
     
-    void clear();
-    
-    // History info
-    size_t getUndoCount() const;
-    size_t getRedoCount() const;
+    void clearHistory();
+
+    size_t getUndoableActionCount() const;
+    size_t getRedoableActionCount() const;
 
 private:
     std::vector<std::unique_ptr<core::IUndoableCommand>> undoStack_;
-    std::vector<std::unique_ptr<core::IUndoableCommand>> redoStack_;    
+    std::vector<std::unique_ptr<core::IUndoableCommand>> redoStack_; 
     size_t maxHistorySize_;
 };
 
