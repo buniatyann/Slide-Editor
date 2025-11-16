@@ -41,6 +41,8 @@ private:
     ParsedCommand parseDisplay();
     ParsedCommand parseHelp();
     ParsedCommand parseExit();
+    ParsedCommand parseUndo(); 
+    ParsedCommand parseRedo();
     
     bool validateArgumentCount(const std::string& cmd, 
                                size_t expected, 
