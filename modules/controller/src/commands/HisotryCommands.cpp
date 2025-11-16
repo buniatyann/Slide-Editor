@@ -2,34 +2,38 @@
 
 namespace slideEditor::controller {
 
-UndoCommand::UndoCommand(CommandHistory* history, core::IView* view)
+// ========================================
+// UndoCommand (META-COMMAND)
+// ========================================
+
+UndoCommand::UndoCommand(std::shared_ptr<CommandHistory> history, 
+                         std::shared_ptr<core::IView> view)
     : history_(history), view_(view), success_(false) {}
 
 bool UndoCommand::execute() {
     if (!history_) {
         success_ = false;
         message_ = "Error: Command history not available";
-
         return false;
     }
     
-    if (!history_->canUndo()) {
+    if (!history_->canUndoAction()) {
         success_ = false;
         message_ = "Nothing to undo";
-
         return false;
     }
     
-    std::string description = history_->getLastUndoDescription();
-    bool undone = history_->undo();
+    std::string actionDescription = history_->getLastActionToUndo();
+    bool undone = history_->undoLastAction();
     if (undone) {
         success_ = true;
-        message_ = "Undone: " + description;
+        message_ = "[UNDO] Undone action: " + actionDescription;
+
         return true;
     }
     
     success_ = false;
-    message_ = "Error: Failed to undo command";
+    message_ = "Error: Failed to undo action";
 
     return false;
 }
@@ -42,35 +46,39 @@ bool UndoCommand::wasSuccessful() const {
     return success_;
 }
 
-RedoCommand::RedoCommand(CommandHistory* history, core::IView* view)
+// ========================================
+// RedoCommand (META-COMMAND)
+// ========================================
+
+
+RedoCommand::RedoCommand(std::shared_ptr<CommandHistory> history, 
+                         std::shared_ptr<core::IView> view)
     : history_(history), view_(view), success_(false) {}
 
 bool RedoCommand::execute() {
     if (!history_) {
         success_ = false;
         message_ = "Error: Command history not available";
-
         return false;
     }
     
-    if (!history_->canRedo()) {
+    if (!history_->canRedoAction()) {
         success_ = false;
         message_ = "Nothing to redo";
-
         return false;
     }
     
-    std::string description = history_->getLastRedoDescription();
-    bool redone = history_->redo();
+    std::string actionDescription = history_->getLastActionToRedo();
+    bool redone = history_->redoLastAction();
     if (redone) {
         success_ = true;
-        message_ = "Redone: " + description;
+        message_ = "[REDO] Redone action: " + actionDescription;
 
         return true;
     }
     
     success_ = false;
-    message_ = "Error: Failed to redo command";
+    message_ = "Error: Failed to redo action";
 
     return false;
 }

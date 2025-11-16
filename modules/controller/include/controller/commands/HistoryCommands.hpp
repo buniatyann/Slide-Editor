@@ -10,31 +10,35 @@ namespace slideEditor::controller {
 
 class UndoCommand : public core::ICommand {
 public:
-    UndoCommand(CommandHistory* history, core::IView* view);
+    UndoCommand(std::shared_ptr<CommandHistory> history, 
+                std::shared_ptr<core::IView> view);
     
     bool execute() override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
+    bool isAction() const override { return false; }
 
 private:
-    CommandHistory* history_;
-    core::IView* view_;
+    std::shared_ptr<CommandHistory> history_;
+    std::shared_ptr<core::IView> view_;
     
-    bool success_;
     std::string message_;
+    bool success_;
 };
 
 class RedoCommand : public core::ICommand {
 public:
-    RedoCommand(CommandHistory* history, core::IView* view);
+    RedoCommand(std::shared_ptr<CommandHistory> history, 
+                std::shared_ptr<core::IView> view);
     
     bool execute() override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
+    bool isAction() const override { return false; }
 
 private:
-    CommandHistory* history_;
-    core::IView* view_;
+    std::shared_ptr<CommandHistory> history_;
+    std::shared_ptr<core::IView> view_;
     
     bool success_;
     std::string message_;
