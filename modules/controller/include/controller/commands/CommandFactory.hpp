@@ -15,15 +15,15 @@ namespace slideEditor::controller {
 
 class CommandFactory : public core::ICommandFactory {
 public:
-    CommandFactory(core::ISlideRepository* repo,
-                   core::ISerializer* serializer,
-                   core::IView* view,
-                   CommandHistory* history);
+    CommandFactory(std::shared_ptr<core::ISlideRepository> repo,
+                   std::shared_ptr<core::ISerializer> serializer,
+                   std::shared_ptr<core::IView> view,
+                   std::shared_ptr<CommandHistory> history);
     
     std::unique_ptr<core::ICommand> createCommand(
         const std::string& commandName,
         const std::vector<std::string>& args,
-        core::ISlideRepository* repository
+        std::shared_ptr<core::ISlideRepository> repository = nullptr
     ) override;
     
     bool isValidCommand(const std::string& commandName) const override;
@@ -31,10 +31,10 @@ public:
     std::string getAllCommandsHelp() const override;
 
 private:
-    core::ISlideRepository* repository_;
-    core::ISerializer* serializer_;
-    core::IView* view_;
-    CommandHistory* history_;
+    std::shared_ptr<core::ISlideRepository> repository_;
+    std::shared_ptr<core::ISerializer> serializer_;
+    std::shared_ptr<core::IView> view_;
+    std::shared_ptr<CommandHistory> history_;
     
     std::map<std::string, std::string> helpTexts_;
     
