@@ -13,10 +13,9 @@ public:
     virtual ~ICommand() = default;
     
     virtual bool execute() = 0;
-    
     virtual std::string getResultMessage() const = 0;
-    
     virtual bool wasSuccessful() const = 0;
+    virtual bool isAction() const { return false; }
 };
 
 } // namespace slideEditor::core
