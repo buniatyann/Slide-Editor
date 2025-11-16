@@ -12,6 +12,7 @@ public:
     virtual bool undo() = 0;
     virtual bool canUndo() const = 0;
     virtual std::string getDescription() const = 0;
+    bool isAction() const override { return true; }
 };
 
 } // namespace slideEditor::core
