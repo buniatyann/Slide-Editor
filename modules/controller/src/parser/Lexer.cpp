@@ -167,7 +167,7 @@ void Lexer::clearBuffer() {
 bool Lexer::isCommandKeyword(const std::string& word) const {
     static const std::vector<std::string> keywords = {
         "create", "addshape", "removeshape", "save", 
-        "load", "display", "help", "exit"
+        "load", "display", "help", "exit", "undo", "redo"
     };
     
     std::string lower = word;
