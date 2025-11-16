@@ -1,5 +1,7 @@
 #include "controller/commands/CommandFactory.hpp"
 #include "controller/commands/Commands.hpp"
+#include "controller/commands/UndoableCommands.hpp"
+#include "controller/commands/HistoryCommands.hpp"
 #include <algorithm>
 #include <sstream>
 
@@ -7,8 +9,9 @@ namespace slideEditor::controller {
 
 CommandFactory::CommandFactory(core::ISlideRepository* repo,
                                core::ISerializer* serializer,
-                               core::IView* view)
-    : repository_(repo), serializer_(serializer), view_(view) {
+                               core::IView* view,
+                               CommandHistory* history)
+    : repository_(repo), serializer_(serializer), view_(view), history_(history) {
     initializeHelpTexts();
 }
 
@@ -16,18 +19,21 @@ void CommandFactory::initializeHelpTexts() {
     helpTexts_["create"] = 
         "create <title> <content> <theme>\n"
         "  Creates a new slide with the specified title, content, and theme.\n"
-        "  Example: create MyTitle MyContent DarkTheme";
+        "  Example: create MyTitle MyContent DarkTheme\n"
+        "  Note: This action can be undone.";
     
     helpTexts_["addshape"] = 
         "addshape <id> <type> <scale>\n"
         "  Adds a shape to the slide with the given ID.\n"
         "  Types: Circle, Rectangle, Triangle, Ellipse\n"
-        "  Example: addshape 1 circle 2.5";
+        "  Example: addshape 1 circle 2.5\n"
+        "  Note: This action can be undone.";
     
     helpTexts_["removeshape"] = 
         "removeshape <id> <index>\n"
         "  Removes the shape at the specified index from the slide.\n"
-        "  Example: removeshape 1 0";
+        "  Example: removeshape 1 0\n"
+        "  Note: This action can be undone.";
     
     helpTexts_["save"] = 
         "save <filename>\n"
@@ -42,6 +48,16 @@ void CommandFactory::initializeHelpTexts() {
     helpTexts_["display"] = 
         "display\n"
         "  Displays all slides in the presentation with their details.";
+    
+    helpTexts_["undo"] = 
+        "undo\n"
+        "  Undoes the last action.\n"
+        "  Can undo: create, addshape, removeshape";
+    
+    helpTexts_["redo"] = 
+        "redo\n"
+        "  Redoes the last undone action.\n"
+        "  Note: Redo history is cleared when a new action is performed.";
     
     helpTexts_["help"] = 
         "help [command]\n"
@@ -62,34 +78,31 @@ std::unique_ptr<core::ICommand> CommandFactory::createCommand(
     std::transform(cmdLower.begin(), cmdLower.end(), cmdLower.begin(),
                    [](unsigned char c){ return std::tolower(c); });
     
-    // Use injected repository if provided, otherwise use factory's default
     auto* repo = repository ? repository : repository_;
-    
+    // Undoable commands
     if (cmdLower == "create") {
         if (args.size() != 3) {
             return nullptr;
         }
-
-        return std::make_unique<CreateCommand>(repo, args[0], args[1], args[2]);
+        
+        return std::make_unique<UndoableCreateCommand>(repo, args[0], args[1], args[2]);
     }
-    
     if (cmdLower == "addshape") {
         if (args.size() != 3) {
             return nullptr;
         }
-
+        
         try {
             int id = std::stoi(args[0]);
             double scale = std::stod(args[2]);
         
-            return std::make_unique<AddShapeCommand>(repo, id, args[1], scale);
+            return std::make_unique<UndoableAddShapeCommand>(repo, id, args[1], scale);
         } catch (...) {
             return nullptr;
         }
     }
-    
     if (cmdLower == "removeshape") {
-        if (args.size() != 2) { 
+        if (args.size() != 2) {
             return nullptr;
         }
         
@@ -97,12 +110,29 @@ std::unique_ptr<core::ICommand> CommandFactory::createCommand(
             int id = std::stoi(args[0]);
             size_t index = std::stoull(args[1]);
         
-            return std::make_unique<RemoveShapeCommand>(repo, id, index);
+            return std::make_unique<UndoableRemoveShapeCommand>(repo, id, index);
         } catch (...) {
             return nullptr;
         }
     }
     
+    // Undo/Redo commands
+    if (cmdLower == "undo") {
+        if (args.size() != 0) {
+            return nullptr;
+        }
+        
+        return std::make_unique<UndoCommand>(history_, view_);
+    }
+    if (cmdLower == "redo") {
+        if (args.size() != 0) {
+            return nullptr;
+        }
+        
+        return std::make_unique<RedoCommand>(history_, view_);
+    }
+    
+    // Non-undoable commands
     if (cmdLower == "save") {
         if (args.size() != 1) {
             return nullptr;
@@ -110,7 +140,6 @@ std::unique_ptr<core::ICommand> CommandFactory::createCommand(
         
         return std::make_unique<SaveCommand>(repo, serializer_, args[0]);
     }
-    
     if (cmdLower == "load") {
         if (args.size() != 1) {
             return nullptr;
@@ -118,25 +147,22 @@ std::unique_ptr<core::ICommand> CommandFactory::createCommand(
         
         return std::make_unique<LoadCommand>(repo, serializer_, args[0]);
     }
-    
     if (cmdLower == "display") {
         if (args.size() != 0) {
             return nullptr;
         }
-        
+
         return std::make_unique<DisplayCommand>(repo, view_);
     }
-    
     if (cmdLower == "help") {
         std::string specificCmd = args.empty() ? "" : args[0];
         return std::make_unique<HelpCommand>(this, view_, specificCmd);
     }
-    
     if (cmdLower == "exit") {
         if (args.size() != 0) {
             return nullptr;
         }
-        
+
         return std::make_unique<ExitCommand>();
     }
     
