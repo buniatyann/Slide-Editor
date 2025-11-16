@@ -16,7 +16,7 @@ public:
     virtual std::unique_ptr<ICommand> createCommand(
         const std::string& commandName,
         const std::vector<std::string>& args,
-        ISlideRepository* repository
+        std::shared_ptr<ISlideRepository> repository = nullptr
     ) = 0;
     
     virtual bool isValidCommand(const std::string& commandName) const = 0;
