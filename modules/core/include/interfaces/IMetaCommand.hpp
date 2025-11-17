@@ -21,6 +21,11 @@ struct ArgumentInfo {
           description(std::move(desc)), required(req) {}
 };
 
+using CommandCreator = std::function<std::unique_ptr<ICommand>(
+    const std::vector<std::string>& args,
+    void* context
+)>;
+
 class IMetaCommand {
 public:
     virtual ~IMetaCommand() = default;
@@ -28,22 +33,16 @@ public:
     // Basic information
     virtual std::string getName() const = 0;
     virtual std::string getDescription() const = 0;
-    virtual std::string getCreator() const = 0;  
-    virtual std::string getCategory() const = 0;  
+    virtual std::string getCategory() const = 0;  // "ACTION", "META", "OPERATION", "QUERY", "CONTROL"
+    
+    virtual CommandCreator getCreator() const = 0;
     
     // Argument information
     virtual const std::vector<ArgumentInfo>& getArgumentInfo() const = 0;
     virtual size_t getRequiredArgCount() const = 0;
     virtual size_t getMaxArgCount() const = 0;
     
-    // Validation
     virtual bool validateArguments(const std::vector<std::string>& args) const = 0;
-    
-    // Command creation (factory method)
-    virtual std::unique_ptr<ICommand> createCommand(
-        const std::vector<std::string>& args,
-        void* context  // Opaque context for dependencies
-    ) const = 0;
     
     // Help generation
     virtual std::string getUsage() const = 0;

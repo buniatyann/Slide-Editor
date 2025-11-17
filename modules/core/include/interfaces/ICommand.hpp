@@ -1,6 +1,7 @@
 #ifndef I_COMMAND_HPP
 #define I_COMMAND_HPP
 
+#include "IOutputStream.hpp"
 #include <string>
 #include <memory>
 
@@ -12,7 +13,7 @@ class ICommand {
 public:
     virtual ~ICommand() = default;
     
-    virtual bool execute() = 0;
+    virtual bool execute(IOutputStream& output) = 0;
     virtual std::string getResultMessage() const = 0;
     virtual bool wasSuccessful() const = 0;
     virtual bool isAction() const { return false; }

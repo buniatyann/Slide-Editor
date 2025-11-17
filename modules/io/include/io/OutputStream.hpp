@@ -2,7 +2,7 @@
 #define OUTPUT_STREAM_HPP
 
 #include "../../../core/include/interfaces/IOutputStream.hpp"
-// #include " interfaces/IOutputStream.hpp"
+// #include "interfaces/IOutputStream.hpp"
 #include <ostream>
 #include <memory>
 
