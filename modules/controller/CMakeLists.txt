@@ -2,6 +2,7 @@ add_library(controller
     src/CommandController.cpp
     src/InputHandler.cpp
     src/CommandHistory.cpp
+    src/CommandRegistry.cpp
     src/commands/Commands.cpp
     src/commands/CommandFactory.cpp
     src/commands/UndoableCommands.cpp           
