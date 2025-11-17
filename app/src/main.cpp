@@ -12,13 +12,13 @@ int main(int argc, char* argv[]) {
     std::ignore = argc;
     std::ignore = argv;
     
-    // core components
+    // Create core components with shared_ptr
     auto repository = std::make_shared<model::SlideRepository>();
     auto serializer = std::make_shared<serialization::JsonSerializer>();
     auto view = std::make_shared<view::CliView>(std::cout);
     auto inputStream = std::make_shared<io::InputStream>(std::cin);
     
-    // controller
+    // Create controller (handles all logic internally)
     controller::CommandController controller(
         repository,
         serializer,
@@ -26,13 +26,13 @@ int main(int argc, char* argv[]) {
         inputStream
     );
     
-    // interactive mode
+    // Run interactive mode
     try {
         controller.run();
     } catch (const std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << std::endl;
         return 1;
     }
-
+    
     return 0;
 }
