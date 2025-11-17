@@ -3,10 +3,12 @@ add_library(controller
     src/InputHandler.cpp
     src/CommandHistory.cpp
     src/CommandRegistry.cpp
+    src/CommandContext.cpp
     src/commands/Commands.cpp
     src/commands/CommandFactory.cpp
     src/commands/UndoableCommands.cpp           
     src/commands/HistoryCommands.cpp 
+    src/commands/MetaCommandDefinitions.cpp
     src/parser/CommandParser.cpp
     src/parser/Lexer.cpp
     src/parser/LexerState.cpp
