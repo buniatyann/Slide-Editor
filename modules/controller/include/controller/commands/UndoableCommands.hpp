@@ -3,6 +3,7 @@
 
 #include "interfaces/IUndoableCommand.hpp"
 #include "interfaces/ISlideRepository.hpp"
+#include "interfaces/IOutputStream.hpp"
 #include "interfaces/IShape.hpp"
 #include <string>
 #include <memory>
@@ -17,7 +18,7 @@ public:
                           std::string content,
                           std::string theme);
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     bool undo() override;
     bool canUndo() const override;
     std::string getDescription() const override;
@@ -30,10 +31,10 @@ private:
     std::string content_;
     std::string theme_;
     
+    std::string message_;
     int createdId_;
     bool executed_;
     bool success_;
-    std::string message_;
 };
 
 class UndoableAddShapeCommand : public core::IUndoableCommand {
@@ -43,7 +44,7 @@ public:
                             std::string shapeType,
                             double scale);
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     bool undo() override;
     bool canUndo() const override;
     std::string getDescription() const override;
@@ -68,7 +69,7 @@ public:
                                int slideId,
                                size_t shapeIndex);
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     bool undo() override;
     bool canUndo() const override;
     std::string getDescription() const override;
