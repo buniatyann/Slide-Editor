@@ -1,4 +1,6 @@
-#pragma once
+#ifndef I_META_COMMAND_HPP
+#define I_META_COMMAND_HPP
+
 #include <string>
 #include <vector>
 #include <functional>
@@ -49,3 +51,5 @@ public:
 };
 
 } // namespace slideEditor::core
+
+#endif // I_META_COMMAND_HPP

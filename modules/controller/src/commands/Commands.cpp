@@ -1,4 +1,5 @@
 #include "controller/commands/Commands.hpp"
+#include "controller/CommandRegistry.hpp" 
 #include "../../model/SlideFactory.hpp"
 #include <sstream>
 
@@ -270,31 +271,29 @@ bool DisplayCommand::wasSuccessful() const {
 
 // ===== HelpCommand =====
 
-HelpCommand::HelpCommand(core::ICommandFactory* factory,
+HelpCommand::HelpCommand(CommandRegistry* registry,
                          std::shared_ptr<core::IView> view,
                          std::string specificCommand)
-    : factory_(factory), view_(view),
+    : registry_(registry), view_(view),
       specificCommand_(std::move(specificCommand)),
       success_(false) {}
 
 bool HelpCommand::execute() {
-    if (!factory_ || !view_) {
+    if (!registry_ || !view_) {
         success_ = false;
         message_ = "Error: Required components not available";
-        
+
         return false;
     }
     
-    // Show all commands
     if (specificCommand_.empty()) {
-        std::string helpText = factory_->getAllCommandsHelp();
+        std::string helpText = registry_->getAllCommandsHelp();
         view_->displayHelp(helpText);
         message_ = "Help displayed";
     } 
     else {
-        // Show specific command help
-        if (factory_->isValidCommand(specificCommand_)) {
-            std::string helpText = factory_->getCommandHelp(specificCommand_);
+        if (registry_->hasCommand(specificCommand_)) {
+            std::string helpText = registry_->getCommandHelp(specificCommand_);
             view_->displayHelp(helpText);
             message_ = "Help for '" + specificCommand_ + "' displayed";
         } 

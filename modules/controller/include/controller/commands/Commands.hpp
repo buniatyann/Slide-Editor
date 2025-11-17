@@ -6,6 +6,7 @@
 #include "interfaces/ISlideRepository.hpp"
 #include "interfaces/ISerializer.hpp"
 #include "interfaces/IView.hpp"
+#include "controller/CommandRegistry.hpp"
 #include <string>
 #include <vector>
 
@@ -137,7 +138,7 @@ private:
 // Help command
 class HelpCommand : public core::ICommand {
 public:
-    HelpCommand(core::ICommandFactory* factory,
+    HelpCommand(CommandRegistry* registry, 
                 std::shared_ptr<core::IView> view,
                 std::string specificCommand = "");
     
@@ -147,7 +148,7 @@ public:
     bool isAction() const override { return false; }
 
 private:
-    core::ICommandFactory* factory_;  // Can it stay as raw pointer (non-owning) ?
+    CommandRegistry* registry_;  // Changed from ICommandFactory
     std::shared_ptr<core::IView> view_;
     std::string specificCommand_;
     
