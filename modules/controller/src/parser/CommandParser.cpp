@@ -1,21 +1,27 @@
 #include "controller/parser/CommandParser.hpp"
+#include "controller/CommandRegistry.hpp"  
 #include <algorithm>
 
 namespace slideEditor::controller {
+
+void CommandParser::setRegistry(CommandRegistry* registry) {
+    registry_ = registry;
+}
 
 ParsedCommand::ParsedCommand() 
     : isValid(false) {}
 
 CommandParser::CommandParser(core::IInputStream* input)
     : lexer_(std::make_unique<Lexer>(input)),
-      currentToken_(TokenType::END_OF_FILE) {
-    advance();  // Load first token
+      currentToken_(TokenType::END_OF_FILE),
+      registry_(nullptr) {
+    advance();
 }
 
 void CommandParser::advance() {
     do {
         currentToken_ = lexer_->nextToken();
-    } while (currentToken_.type == TokenType::END_OF_LINE);  // Skip empty lines
+    } while (currentToken_.type == TokenType::END_OF_LINE);
 }
 
 bool CommandParser::expect(TokenType type) {
@@ -23,7 +29,7 @@ bool CommandParser::expect(TokenType type) {
         advance();
         return true;
     }
-
+    
     return false;
 }
 
@@ -44,7 +50,7 @@ ParsedCommand CommandParser::parseCommand() {
     if (!match(TokenType::COMMAND)) {
         result.isValid = false;
         result.errorMessage = "Expected command keyword";
- 
+
         return result;
     }
     
@@ -52,223 +58,84 @@ ParsedCommand CommandParser::parseCommand() {
     std::transform(cmdName.begin(), cmdName.end(), cmdName.begin(),
                    [](unsigned char c){ return std::tolower(c); });
     
+    result.commandName = cmdName;
     advance();  // Consume command
     
-    if (cmdName == "create") {
-        return parseCreate();
-    } 
-    else if (cmdName == "addshape") {
-        return parseAddShape();
-    } 
-    else if (cmdName == "removeshape") {
-        return parseRemoveShape();
-    } 
-    else if (cmdName == "save") {
-        return parseSave();
-    } 
-    else if (cmdName == "load") {
-        return parseLoad();
-    } 
-    else if (cmdName == "display") {
-        return parseDisplay();
-    } 
-    else if (cmdName == "undo") {
-        return parseUndo();  
-    } 
-    else if (cmdName == "redo") {
-        return parseRedo();  
-    }
-    else if (cmdName == "help") {
-        return parseHelp();
-    } 
-    else if (cmdName == "exit") {
-        return parseExit();
-    }
-    
-    result.isValid = false;
-    result.errorMessage = "Unknown command: " + cmdName;
-    
-    return result;
-}
+    // Get metadata from registry
+    if (!registry_) {
+        result.isValid = false;
+        result.errorMessage = "Command registry not set";
 
-ParsedCommand CommandParser::parseCreate() {
-    ParsedCommand result;
-    result.commandName = "create";
+        return result;
+    }
     
-    // create <title> <content> <theme>
-    // Expect 3 arguments
+    const auto* metaCmd = registry_->getMetaCommand(cmdName);
+    if (!metaCmd) {
+        result.isValid = false;
+        result.errorMessage = "Unknown command: " + cmdName;
+        return result;
+    }
     
-    for (int i = 0; i < 3; ++i) {
-        if (!match(TokenType::IDENTIFIER)) {
-            result.isValid = false;
-            result.errorMessage = "Expected argument " + std::to_string(i + 1);
-    
-            return result;
+    // Parse arguments based on metadata
+    const auto& argInfo = metaCmd->getArgumentInfo();
+    for (size_t i = 0; i < argInfo.size(); ++i) {
+        const auto& arg = argInfo[i];
+        // Check if we have more tokens
+        if (match(TokenType::END_OF_FILE) || match(TokenType::END_OF_LINE)) {
+            if (arg.required) {
+                result.isValid = false;
+                result.errorMessage = "Missing required argument: " + arg.name;
+
+                return result;
+            }
+
+            break;  // Optional argument missing
         }
-    
-        result.arguments.push_back(currentToken_.asString());
+        
+        // Parse based on type
+        if (arg.type == "int") {
+            if (!match(TokenType::NUMBER)) {
+                result.isValid = false;
+                result.errorMessage = "Expected number for argument: " + arg.name;
+        
+                return result;
+            }
+        
+            result.arguments.push_back(std::to_string(currentToken_.asInt()));
+        } 
+        else if (arg.type == "double") {
+            if (!match(TokenType::NUMBER)) {
+                result.isValid = false;
+                result.errorMessage = "Expected number for argument: " + arg.name;
+        
+                return result;
+            }
+        
+            result.arguments.push_back(std::to_string(currentToken_.asDouble()));
+        } 
+        else {  // string or identifier
+            if (!match(TokenType::IDENTIFIER) && !match(TokenType::NUMBER)) {
+                result.isValid = false;
+                result.errorMessage = "Expected value for argument: " + arg.name;
+        
+                return result;
+            }
+        
+            result.arguments.push_back(currentToken_.asString());
+        }
+        
         advance();
     }
     
-    result.isValid = true;
-    return result;
-}
-
-ParsedCommand CommandParser::parseAddShape() {
-    ParsedCommand result;
-    result.commandName = "addshape";
-    
-    // addshape <id> <type> <scale>
-    
-    // Argument 1: slide ID (number)
-    if (!match(TokenType::NUMBER)) {
+    // Validate using metadata
+    if (!metaCmd->validateArguments(result.arguments)) {
         result.isValid = false;
-        result.errorMessage = "Expected slide ID (number)";
-    
+        result.errorMessage = "Invalid arguments for command: " + cmdName;
+        
         return result;
     }
     
-    result.arguments.push_back(std::to_string(currentToken_.asInt()));
-    advance();
-    // Argument 2: shape type (identifier)
-    if (!match(TokenType::IDENTIFIER)) {
-        result.isValid = false;
-        result.errorMessage = "Expected shape type";
-
-        return result;
-    }
-
-    result.arguments.push_back(currentToken_.asString());
-    advance();
-    
-    // Argument 3: scale (number)
-    if (!match(TokenType::NUMBER)) {
-        result.isValid = false;
-        result.errorMessage = "Expected scale (number)";
-
-        return result;
-    }
-
-    result.arguments.push_back(std::to_string(currentToken_.asDouble()));
-    advance();    
     result.isValid = true;
-
-    return result;
-}
-
-ParsedCommand CommandParser::parseRemoveShape() {
-    ParsedCommand result;
-    result.commandName = "removeshape";
-    
-    // removeshape <id> <index>
-    
-    // Argument 1: slide ID
-    if (!match(TokenType::NUMBER)) {
-        result.isValid = false;
-        result.errorMessage = "Expected slide ID (number)";
-    
-        return result;
-    }
-    result.arguments.push_back(std::to_string(currentToken_.asInt()));
-    advance();
-    
-    // Argument 2: shape index
-    if (!match(TokenType::NUMBER)) {
-        result.isValid = false;
-        result.errorMessage = "Expected shape index (number)";
-    
-        return result;
-    }
-    
-    result.arguments.push_back(std::to_string(currentToken_.asInt()));
-    advance();
-    result.isValid = true;
-
-    return result;
-}
-
-ParsedCommand CommandParser::parseSave() {
-    ParsedCommand result;
-    result.commandName = "save";
-    
-    // save <file>
-    if (!match(TokenType::IDENTIFIER)) {
-        result.isValid = false;
-        result.errorMessage = "Expected filename";
-        return result;
-    }
-    
-    result.arguments.push_back(currentToken_.asString());
-    advance();
-    result.isValid = true;
-
-    return result;
-}
-
-ParsedCommand CommandParser::parseLoad() {
-    ParsedCommand result;
-    result.commandName = "load";
-    
-    // load <file>
-    if (!match(TokenType::IDENTIFIER)) {
-        result.isValid = false;
-        result.errorMessage = "Expected filename";
-    
-        return result;
-    }
-    
-    result.arguments.push_back(currentToken_.asString());
-    advance();
-    result.isValid = true;
-
-    return result;
-}
-
-ParsedCommand CommandParser::parseDisplay() {
-    ParsedCommand result;
-    result.commandName = "display";
-    result.isValid = true;
-    
-    return result;
-}
-
-ParsedCommand CommandParser::parseHelp() {
-    ParsedCommand result;
-    result.commandName = "help";
-    
-    // help [command] - optional argument
-    if (match(TokenType::IDENTIFIER) || match(TokenType::COMMAND)) {
-        result.arguments.push_back(currentToken_.asString());
-        advance();
-    }
-    
-    result.isValid = true;
-    return result;
-}
-
-ParsedCommand CommandParser::parseExit() {
-    ParsedCommand result;
-    result.commandName = "exit";
-    result.isValid = true;
-
-    return result;
-}
-
-// No arguments
-ParsedCommand CommandParser::parseUndo() {
-    ParsedCommand result;
-    result.commandName = "undo";
-    result.isValid = true;
-
-    return result;
-}
-
-// No arguments
-ParsedCommand CommandParser::parseRedo() {
-    ParsedCommand result;
-    result.commandName = "redo";
-    result.isValid = true;
-
     return result;
 }
 
@@ -276,7 +143,7 @@ std::vector<ParsedCommand> CommandParser::parseAll() {
     std::vector<ParsedCommand> commands;
     while (!match(TokenType::END_OF_FILE)) {
         ParsedCommand cmd = parseCommand();
-        commands.push_back(cmd);        
+        commands.push_back(cmd);
         if (!cmd.isValid && match(TokenType::END_OF_FILE)) {
             break;
         }

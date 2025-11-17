@@ -9,11 +9,13 @@
 
 namespace slideEditor::controller {
 
+class CommandRegistry;  // Forward declare
+
 struct ParsedCommand {
-    std::string commandName;
     std::vector<std::string> arguments;
-    bool isValid;
+    std::string commandName;
     std::string errorMessage;
+    bool isValid;
     
     ParsedCommand();
 };
@@ -21,34 +23,20 @@ struct ParsedCommand {
 class CommandParser {
 public:
     explicit CommandParser(core::IInputStream* input);
+    
+    void setRegistry(CommandRegistry* registry);  
     ParsedCommand parseCommand();
     std::vector<ParsedCommand> parseAll();
 
 private:
     std::unique_ptr<Lexer> lexer_;
     Token currentToken_;
+    CommandRegistry* registry_;  
     
     // Token management
     void advance();
     bool expect(TokenType type);
     bool match(TokenType type);
-    
-    ParsedCommand parseCreate();
-    ParsedCommand parseAddShape();
-    ParsedCommand parseRemoveShape();
-    ParsedCommand parseSave();
-    ParsedCommand parseLoad();
-    ParsedCommand parseUndo();
-    ParsedCommand parseRedo();
-    ParsedCommand parseDisplay();
-    ParsedCommand parseHelp();
-    ParsedCommand parseExit();
-    ParsedCommand parseUndo();  
-    ParsedCommand parseRedo();
-    
-    bool validateArgumentCount(const std::string& cmd, 
-                               size_t expected, 
-                               size_t actual);
 };
 
 } // namespace slideEditor::controller
