@@ -20,20 +20,22 @@ class MetaCommand : public core::IMetaCommand {
 public:
     MetaCommand(std::string name, 
                 std::string description,
-                std::string creator,
-                std::string category)
+                std::string category,
+                core::CommandCreator creator)
         : name_(std::move(name)),
           description_(std::move(description)),
-          creator_(std::move(creator)),
-          category_(std::move(category)) {}
+          category_(std::move(category)),
+          creator_(std::move(creator)) {}
     
     virtual ~MetaCommand() = default;
     
-    // IMetaCommand implementation
     std::string getName() const override { return name_; }
     std::string getDescription() const override { return description_; }
-    std::string getCreator() const override { return creator_; }
     std::string getCategory() const override { return category_; }
+    
+    core::CommandCreator getCreator() const override { 
+        return creator_; 
+    }
     
     const std::vector<core::ArgumentInfo>& getArgumentInfo() const override {
         return arguments_;
@@ -51,7 +53,6 @@ public:
     bool validateArguments(const std::vector<std::string>& args) const override {
         size_t required = getRequiredArgCount();
         size_t max = getMaxArgCount();
-        
         if (args.size() < required || args.size() > max) {
             return false;
         }
@@ -78,7 +79,7 @@ public:
                 oss << " [" << arg.name << "]";
             }
         }
-        
+
         return oss.str();
     }
     
@@ -90,23 +91,24 @@ public:
             oss << "\n  Arguments:\n";
             for (const auto& arg : arguments_) {
                 oss << "    " << arg.name << " (" << arg.type << ")";
-                if (!arg.required) oss << " [optional]";
+                if (!arg.required) {
+                    oss << " [optional]";
+                }
+                
                 oss << "\n      " << arg.description << "\n";
             }
         }
         
         oss << "\n  Category: " << category_;
-        oss << "\n  Creator: " << creator_;
-        
         return oss.str();
     }
 
 protected:
     std::string name_;
     std::string description_;
-    std::string creator_;
     std::string category_;
     std::vector<core::ArgumentInfo> arguments_;
+    core::CommandCreator creator_;
 
 protected:
     // Add argument to metadata
@@ -138,6 +140,7 @@ protected:
         
         return true;  // Unknown type, allow
     }
+
 };
 
 } // namespace slideEditor::controller
