@@ -4,6 +4,7 @@
 #include "interfaces/ICommand.hpp"
 #include "interfaces/ICommandFactory.hpp"
 #include "interfaces/ISlideRepository.hpp"
+#include "interfaces/IOutputStream.hpp"
 #include "interfaces/ISerializer.hpp"
 #include "interfaces/IView.hpp"
 #include "controller/CommandRegistry.hpp"
@@ -12,69 +13,7 @@
 
 namespace slideEditor::controller {
 
-// Create slide command
-class CreateCommand : public core::ICommand {
-public:
-    CreateCommand(core::ISlideRepository* repo,
-                  std::string title,
-                  std::string content,
-                  std::string theme);
-    
-    bool execute() override;
-    std::string getResultMessage() const override;
-    bool wasSuccessful() const override;
-
-private:
-    core::ISlideRepository* repository_;
-    std::string title_;
-    std::string content_;
-    std::string theme_;    
-    bool success_;
-    std::string message_;
-    int createdId_;
-};
-
-// Add shape command
-class AddShapeCommand : public core::ICommand {
-public:
-    AddShapeCommand(core::ISlideRepository* repo,
-                    int slideId,
-                    std::string shapeType,
-                    double scale);
-    
-    bool execute() override;
-    std::string getResultMessage() const override;
-    bool wasSuccessful() const override;
-
-private:
-    core::ISlideRepository* repository_;
-    std::string shapeType_;
-    double scale_;
-    int slideId_;
-    
-    std::string message_;
-    bool success_;
-};
-
-// Remove shape command
-class RemoveShapeCommand : public core::ICommand {
-public:
-    RemoveShapeCommand(core::ISlideRepository* repo,
-                       int slideId,
-                       size_t shapeIndex);
-    
-    bool execute() override;
-    std::string getResultMessage() const override;
-    bool wasSuccessful() const override;
-
-private:
-    core::ISlideRepository* repository_;
-    size_t shapeIndex_;
-    int slideId_;
-    
-    std::string message_;
-    bool success_;
-};
+class CommandRegistry;
 
 // Save command
 class SaveCommand : public core::ICommand {
@@ -83,7 +22,7 @@ public:
                 std::shared_ptr<core::ISerializer> serializer,
                 std::string filename);
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
     bool isAction() const override { return false; }
@@ -92,6 +31,7 @@ private:
     std::shared_ptr<core::ISlideRepository> repository_;
     std::shared_ptr<core::ISerializer> serializer_;
     std::string filename_;
+
     std::string message_;
     bool success_;
 };
@@ -103,7 +43,7 @@ public:
                 std::shared_ptr<core::ISerializer> serializer,
                 std::string filename);
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
     bool isAction() const override { return false; }
@@ -112,6 +52,7 @@ private:
     std::shared_ptr<core::ISlideRepository> repository_;
     std::shared_ptr<core::ISerializer> serializer_;
     std::string filename_;
+    
     std::string message_;
     bool success_;
 };
@@ -122,7 +63,7 @@ public:
     DisplayCommand(std::shared_ptr<core::ISlideRepository> repo,
                    std::shared_ptr<core::IView> view);
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
     bool isAction() const override { return false; }
@@ -142,7 +83,7 @@ public:
                 std::shared_ptr<core::IView> view,
                 std::string specificCommand = "");
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
     bool isAction() const override { return false; }
@@ -161,7 +102,7 @@ class ExitCommand : public core::ICommand {
 public:
     ExitCommand();
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
     bool isAction() const override { return false; }
