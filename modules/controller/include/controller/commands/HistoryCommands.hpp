@@ -13,7 +13,7 @@ public:
     UndoCommand(std::shared_ptr<CommandHistory> history, 
                 std::shared_ptr<core::IView> view);
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
     bool isAction() const override { return false; }
@@ -31,7 +31,7 @@ public:
     RedoCommand(std::shared_ptr<CommandHistory> history, 
                 std::shared_ptr<core::IView> view);
     
-    bool execute() override;
+    bool execute(core::IOutputStream& output) override;
     std::string getResultMessage() const override;
     bool wasSuccessful() const override;
     bool isAction() const override { return false; }

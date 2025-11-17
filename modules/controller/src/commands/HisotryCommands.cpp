@@ -10,16 +10,20 @@ UndoCommand::UndoCommand(std::shared_ptr<CommandHistory> history,
                          std::shared_ptr<core::IView> view)
     : history_(history), view_(view), success_(false) {}
 
-bool UndoCommand::execute() {
+bool UndoCommand::execute(core::IOutputStream& output) {
     if (!history_) {
         success_ = false;
         message_ = "Error: Command history not available";
+        output.writeLine("[ERROR] " + message_);
+
         return false;
     }
     
     if (!history_->canUndoAction()) {
         success_ = false;
         message_ = "Nothing to undo";
+        output.writeLine(message_);
+
         return false;
     }
     
@@ -28,12 +32,14 @@ bool UndoCommand::execute() {
     if (undone) {
         success_ = true;
         message_ = "[UNDO] Undone action: " + actionDescription;
+        output.writeLine(message_);
 
         return true;
     }
     
     success_ = false;
     message_ = "Error: Failed to undo action";
+    output.writeLine("[ERROR] " + message_);
 
     return false;
 }
@@ -55,16 +61,20 @@ RedoCommand::RedoCommand(std::shared_ptr<CommandHistory> history,
                          std::shared_ptr<core::IView> view)
     : history_(history), view_(view), success_(false) {}
 
-bool RedoCommand::execute() {
+bool RedoCommand::execute(core::IOutputStream& output) {
     if (!history_) {
         success_ = false;
         message_ = "Error: Command history not available";
+        output.writeLine("[ERROR] " + message_);
+
         return false;
     }
     
     if (!history_->canRedoAction()) {
         success_ = false;
         message_ = "Nothing to redo";
+        output.writeLine(message_);
+
         return false;
     }
     
@@ -73,15 +83,18 @@ bool RedoCommand::execute() {
     if (redone) {
         success_ = true;
         message_ = "[REDO] Redone action: " + actionDescription;
+        output.writeLine(message_);
 
         return true;
     }
     
     success_ = false;
     message_ = "Error: Failed to redo action";
+    output.writeLine("[ERROR] " + message_);
 
     return false;
 }
+
 
 std::string RedoCommand::getResultMessage() const {
     return message_;
