@@ -1,10 +1,12 @@
 #include "controller/CommandController.hpp"
 #include "controller/InputHandler.hpp"
 #include "controller/parser/CommandParser.hpp"
-#include "controller/commands/UndoableCommands.hpp"
+#include "controller/commands/MetaCommandDefinitions.hpp"
 #include "io/InputStream.hpp"
+#include "io/OutputStream.hpp"
 #include <sstream>
 #include <memory>
+#include <iostream>
 
 namespace slideEditor::controller {
 
@@ -14,10 +16,30 @@ CommandController::CommandController(std::shared_ptr<core::ISlideRepository> rep
                                      std::shared_ptr<core::IInputStream> input)
     : repository_(repo), serializer_(serializer), view_(view), 
       input_(input), running_(false) {
+    
     commandHistory_ = std::make_shared<CommandHistory>(100);
-    commandFactory_ = std::make_unique<CommandFactory>(
-        repo, serializer, view, commandHistory_
-    );
+    commandRegistry_ = std::make_unique<CommandRegistry>();
+    
+    context_.repository = &repository_;
+    context_.serializer = &serializer_;
+    context_.view = &view_;
+    context_.history = &commandHistory_;
+    context_.commandRegistry = commandRegistry_.get();
+    
+    initializeCommands();
+}
+
+void CommandController::initializeCommands() {
+    commandRegistry_->registerCommand(createCreateMetaCommand());
+    commandRegistry_->registerCommand(createAddShapeMetaCommand());
+    commandRegistry_->registerCommand(createRemoveShapeMetaCommand());
+    commandRegistry_->registerCommand(createUndoMetaCommand());
+    commandRegistry_->registerCommand(createRedoMetaCommand());
+    commandRegistry_->registerCommand(createSaveMetaCommand());
+    commandRegistry_->registerCommand(createLoadMetaCommand());
+    commandRegistry_->registerCommand(createDisplayMetaCommand());
+    commandRegistry_->registerCommand(createHelpMetaCommand());
+    commandRegistry_->registerCommand(createExitMetaCommand());
 }
 
 void CommandController::run() {
@@ -65,42 +87,39 @@ bool CommandController::processCommand(const std::string& commandLine) {
 bool CommandController::processCommandLine(const std::string& commandLine) {
     auto stream = std::make_shared<io::InputStream>(commandLine);
     CommandParser parser(stream.get());
+    parser.setRegistry(commandRegistry_.get());  // for generic parsing
     ParsedCommand parsed = parser.parseCommand();
     if (!parsed.isValid) {
         view_->displayError(parsed.errorMessage);
         return true;
     }
     
-    auto command = commandFactory_->createCommand(
-        parsed.commandName,
-        parsed.arguments,
-        repository_
-    );
-    
-    if (!command) {
-        view_->displayError("Invalid command or arguments");
+    const auto* metaCmd = commandRegistry_->getMetaCommand(parsed.commandName);
+    if (!metaCmd) {
+        view_->displayError("Unknown command: " + parsed.commandName);
         return true;
     }
     
-    bool success = command->execute(); // execute the command
+    auto creator = metaCmd->getCreator();
+    auto command = creator(parsed.arguments, &context_);
+    if (!command) {
+        view_->displayError("Failed to create command");
+        return true;
+    }
+    
+    auto output = std::make_shared<io::OutputStream>(std::cout);
+    bool success = command->execute(*output);
     if (success) {
-        view_->displayMessage(command->getResultMessage());
-
-        // If it's an ACTION (not undo/redo meta-command), add to history
         if (command->isAction()) {
             auto* undoableCmd = dynamic_cast<core::IUndoableCommand*>(command.get());
             if (undoableCmd) {
-                // Transfer ownership to history
                 std::unique_ptr<core::IUndoableCommand> undoablePtr(
                     static_cast<core::IUndoableCommand*>(command.release())
                 );
-    
+
                 commandHistory_->pushAction(std::move(undoablePtr));
             }
         }
-    } 
-    else {
-        view_->displayError(command->getResultMessage());
     }
     
     return parsed.commandName != "exit";

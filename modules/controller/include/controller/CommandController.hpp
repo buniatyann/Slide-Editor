@@ -8,6 +8,7 @@
 #include "interfaces/IInputStream.hpp"
 #include "controller/commands/CommandFactory.hpp"
 #include "controller/CommandHistory.hpp"
+#include "CommandContext.hpp"
 #include <memory>
 #include <string>
 
@@ -30,10 +31,13 @@ private:
     std::shared_ptr<core::IInputStream> input_;
     
     std::shared_ptr<CommandHistory> commandHistory_;
-    std::unique_ptr<CommandFactory> commandFactory_;
+    std::unique_ptr<CommandRegistry> commandRegistry_;
+    
+    CommandContext context_;  // Context for command creation
     
     bool running_;
     
+    void initializeCommands();
     bool processCommandLine(const std::string& commandLine);
 };
 
