@@ -1,5 +1,7 @@
 #include "controller/commands/Commands.hpp"
 #include "controller/CommandRegistry.hpp" 
+#include "view/SvgGenerator.hpp"      
+#include "view/BrowserOpener.hpp"
 #include "../../model/SlideFactory.hpp"
 #include <sstream>
 
@@ -177,6 +179,63 @@ std::string ExitCommand::getResultMessage() const {
 }
 
 bool ExitCommand::wasSuccessful() const {
+    return success_;
+}
+
+// ===== DrawCommand =====
+DrawCommand::DrawCommand(std::shared_ptr<core::ISlideRepository> repo,
+                         std::shared_ptr<core::IView> view,
+                         std::string filename)
+    : repository_(repo), view_(view),
+      filename_(std::move(filename)), success_(false) {
+    // Ensure .svg extension
+    if (filename_.find(".svg") == std::string::npos) {
+        filename_ += ".svg";
+    }
+}
+
+bool DrawCommand::execute(core::IOutputStream& output) {
+    if (!repository_ || !view_) {
+        success_ = false;
+        message_ = "Error: Required components not available";
+        output.writeLine("[ERROR] " + message_);
+
+        return false;
+    }
+    
+    view::SvgGenerator generator;
+    bool saved = generator.generateAndSave(repository_.get(), filename_);
+    if (!saved) {
+        success_ = false;
+        message_ = "Error: Failed to generate SVG file";
+        output.writeLine("[ERROR] " + message_);
+
+        return false;
+    }
+    
+    output.writeLine("SVG file generated: " + filename_);
+    bool opened = view::BrowserOpener::openInBrowser(filename_);
+    if (opened) {
+        success_ = true;
+        message_ = "SVG generated and opened in browser: " + filename_;
+        output.writeLine(message_);
+
+        return true;
+    } 
+    else {
+        success_ = true;  // File was created successfully
+        message_ = "SVG generated: " + filename_ + " (failed to open browser automatically)";
+        output.writeLine(message_);
+
+        return true;
+    }
+}
+
+std::string DrawCommand::getResultMessage() const {
+    return message_;
+}
+
+bool DrawCommand::wasSuccessful() const {
     return success_;
 }
 

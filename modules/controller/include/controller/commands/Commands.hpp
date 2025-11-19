@@ -112,6 +112,26 @@ private:
     bool success_;
 };
 
+class DrawCommand : public core::ICommand {
+public:
+    DrawCommand(std::shared_ptr<core::ISlideRepository> repo,
+                std::shared_ptr<core::IView> view,
+                std::string filename = "presentation.svg");
+    
+    bool execute(core::IOutputStream& output) override;
+    std::string getResultMessage() const override;
+    bool wasSuccessful() const override;
+    bool isAction() const override { return false; }
+
+private:
+    std::shared_ptr<core::ISlideRepository> repository_;
+    std::shared_ptr<core::IView> view_;
+    std::string filename_;
+    
+    std::string message_;
+    bool success_;
+};
+
 } // namespace slideEditor::controller
 
 #endif // COMMANDS_HPP
