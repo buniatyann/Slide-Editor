@@ -1,9 +1,6 @@
 #include "model/SlideFactory.hpp"
 #include "model/Slide.hpp"
-#include "model/shapes/Circle.hpp"
-#include "model/shapes/Rectangle.hpp"
-#include "model/shapes/Triangle.hpp"
-#include "model/shapes/Ellipse.hpp"
+#include "model/shapes/Shape.hpp"
 #include <algorithm>
 #include <cctype>
 
@@ -11,26 +8,35 @@ namespace slideEditor::model {
 
 std::unique_ptr<core::IShape> SlideFactory::createShape(
     const std::string& type, 
-    double scale) 
+    double scale,
+    const std::string& borderColor,
+    const std::string& fillColor) 
 {
     std::string lowerType = type;
     std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(),
                    [](unsigned char c){ return std::tolower(c); });
     
+    core::ShapeType shapeType;
     if (lowerType == "circle") {
-        return std::make_unique<Circle>(scale);
+        shapeType = core::ShapeType::CIRCLE;
     } 
     else if (lowerType == "rectangle") {
-        return std::make_unique<Rectangle>(scale);
+        shapeType = core::ShapeType::RECTANGLE;
     } 
     else if (lowerType == "triangle") {
-        return std::make_unique<Triangle>(scale);
+        shapeType = core::ShapeType::TRIANGLE;
     } 
     else if (lowerType == "ellipse") {
-        return std::make_unique<Ellipse>(scale);
+        shapeType = core::ShapeType::ELLIPSE;
+    } 
+    else {
+        return nullptr;
     }
     
-    return nullptr;
+    Color border = Color::fromString(borderColor);
+    Color fill = Color::fromString(fillColor);
+    
+    return std::make_unique<Shape>(shapeType, scale, border, fill);
 }
 
 std::unique_ptr<core::ISlide> SlideFactory::createSlide(
@@ -50,5 +56,6 @@ bool SlideFactory::isValidShapeType(const std::string& type) {
     return lowerType == "circle" || lowerType == "rectangle" || 
            lowerType == "triangle" || lowerType == "ellipse";
 }
+
 
 } // namespace slieEditor::model

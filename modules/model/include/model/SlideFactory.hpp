@@ -12,7 +12,9 @@ class SlideFactory {
 public:
     static std::unique_ptr<core::IShape> createShape(
         const std::string& type, 
-        double scale
+        double scale,
+        const std::string& borderColor = "black",
+        const std::string& fillColor = "white"
     );
     
     static std::unique_ptr<core::ISlide> createSlide(
