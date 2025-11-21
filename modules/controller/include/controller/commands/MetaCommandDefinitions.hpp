@@ -25,6 +25,7 @@ std::unique_ptr<core::IMetaCommand> createLoadMetaCommand();
 std::unique_ptr<core::IMetaCommand> createDisplayMetaCommand();
 std::unique_ptr<core::IMetaCommand> createHelpMetaCommand();
 std::unique_ptr<core::IMetaCommand> createExitMetaCommand();
+std::unique_ptr<core::IMetaCommand> createDrawMetaCommand();
 
 } // namespace slideEditor::controller
 

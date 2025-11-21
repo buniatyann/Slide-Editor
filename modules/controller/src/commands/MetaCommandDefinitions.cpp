@@ -237,4 +237,38 @@ std::unique_ptr<core::IMetaCommand> createExitMetaCommand() {
     return metaCmd;
 }
 
+// ========================================
+// DrawMetaCommand
+// ========================================
+
+std::unique_ptr<core::IMetaCommand> createDrawMetaCommand() {
+    auto creator = [](const std::vector<std::string>& args, void* contextPtr) 
+        -> std::unique_ptr<core::ICommand> 
+    {
+        auto* context = static_cast<CommandContext*>(contextPtr);
+        
+        if (!context->hasRepository() || !context->hasView()) {
+            throw std::runtime_error("Repository or View not available in context");
+        }
+        
+        auto repo = context->getRepository();
+        auto view = context->getView();
+        
+        std::string filename = args.empty() ? "presentation.svg" : args[0];
+        
+        return std::make_unique<DrawCommand>(repo, view, filename);
+    };
+    
+    auto metaCmd = std::make_unique<MetaCommand>(
+        "draw", 
+        "Generates an SVG file of the presentation and opens it in the browser.",
+        "OPERATION",
+        creator
+    );
+    
+    metaCmd->addArgument({"filename", "identifier", "Output SVG filename (optional, default: presentation.svg)", false});
+    
+    return metaCmd;
+}
+
 } // namespace slideEditor::controller 
