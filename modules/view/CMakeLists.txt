@@ -1,5 +1,7 @@
 add_library(view
     src/cli/CliView.cpp
+    src/SvgGenerator.cpp        
+    src/BrowserOpener.cpp
 )
 
 target_include_directories(view PUBLIC
