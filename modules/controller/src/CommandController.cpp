@@ -40,6 +40,7 @@ void CommandController::initializeCommands() {
     commandRegistry_->registerCommand(createDisplayMetaCommand());
     commandRegistry_->registerCommand(createHelpMetaCommand());
     commandRegistry_->registerCommand(createExitMetaCommand());
+    commandRegistry_->registerCommand(createDrawMetaCommand());
 }
 
 void CommandController::run() {
