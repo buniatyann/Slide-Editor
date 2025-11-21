@@ -27,15 +27,25 @@ std::unique_ptr<core::IMetaCommand> createCreateMetaCommand() {
 }
 
 std::unique_ptr<core::IMetaCommand> createAddShapeMetaCommand() {
-    auto creator = [](const std::vector<std::string>& args, void* context) 
-        -> std::unique_ptr<core::ICommand> 
+    auto creator = [](const std::vector<std::string>& args, void* contextPtr) 
+                    -> std::unique_ptr<core::ICommand> 
     {
-        auto* ctx = static_cast<CommandContext*>(context);
-        auto repo = static_cast<std::shared_ptr<core::ISlideRepository>*>(ctx->repository);
+        auto* context = static_cast<CommandContext*>(contextPtr);
+        if (!context->hasRepository()) {
+            throw std::runtime_error("Repository not available in context");
+        }
+        
+        auto repo = context->getRepository();
         int id = std::stoi(args[0]);
         double scale = std::stod(args[2]);
         
-        return std::make_unique<UndoableAddShapeCommand>(*repo, id, args[1], scale);
+        // Optional color arguments
+        std::string borderColor = args.size() > 3 ? args[3] : "black";
+        std::string fillColor = args.size() > 4 ? args[4] : "white";
+        
+        return std::make_unique<UndoableAddShapeCommand>(
+            repo, id, args[1], scale, borderColor, fillColor
+        );
     };
     
     auto metaCmd = std::make_unique<MetaCommand>(
@@ -48,6 +58,8 @@ std::unique_ptr<core::IMetaCommand> createAddShapeMetaCommand() {
     metaCmd->addArgument({"id", "int", "The slide ID", true});
     metaCmd->addArgument({"type", "identifier", "Shape type (circle, rectangle, triangle, ellipse)", true});
     metaCmd->addArgument({"scale", "double", "Scale factor for the shape", true});
+    metaCmd->addArgument({"borderColor", "identifier", "Border color (optional, default: black)", false});
+    metaCmd->addArgument({"fillColor", "identifier", "Fill color (optional, default: white)", false});
     
     return metaCmd;
 }
@@ -270,5 +282,6 @@ std::unique_ptr<core::IMetaCommand> createDrawMetaCommand() {
     
     return metaCmd;
 }
+
 
 } // namespace slideEditor::controller 
