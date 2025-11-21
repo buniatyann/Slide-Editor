@@ -42,7 +42,9 @@ public:
     UndoableAddShapeCommand(std::shared_ptr<core::ISlideRepository> repo,
                             int slideId,
                             std::string shapeType,
-                            double scale);
+                            double scale,
+                            std::string borderColor = "black",   
+                            std::string fillColor = "white");
     
     bool execute(core::IOutputStream& output) override;
     bool undo() override;
@@ -55,8 +57,10 @@ private:
     std::shared_ptr<core::ISlideRepository> repository_;
     int slideId_;
     std::string shapeType_;
+    std::string borderColor_;  
+    std::string fillColor_;
     double scale_;
-    
+
     size_t addedShapeIndex_;
     bool executed_;
     bool success_;

@@ -90,10 +90,14 @@ UndoableAddShapeCommand::UndoableAddShapeCommand(
     std::shared_ptr<core::ISlideRepository> repo,
     int slideId,
     std::string shapeType,
-    double scale)
+    double scale,
+    std::string borderColor,
+    std::string fillColor)
     : repository_(repo),
       slideId_(slideId),
       shapeType_(std::move(shapeType)),
+      borderColor_(std::move(borderColor)),
+      fillColor_(std::move(fillColor)),
       scale_(scale),
       addedShapeIndex_(0),
       executed_(false),
@@ -104,6 +108,7 @@ bool UndoableAddShapeCommand::execute(core::IOutputStream& output) {
         success_ = false;
         message_ = "Error: Repository not available";
         output.writeLine("[ERROR] " + message_);
+        
         return false;
     }
     
@@ -114,28 +119,30 @@ bool UndoableAddShapeCommand::execute(core::IOutputStream& output) {
         oss << "Error: Slide with ID " << slideId_ << " not found";
         message_ = oss.str();
         output.writeLine("[ERROR] " + message_);
+        
         return false;
     }
     
-    auto shape = model::SlideFactory::createShape(shapeType_, scale_);
+    auto shape = model::SlideFactory::createShape(shapeType_, scale_, borderColor_, fillColor_);
     if (!shape) {
         success_ = false;
         message_ = "Error: Invalid shape type '" + shapeType_ + "'";
         output.writeLine("[ERROR] " + message_);
+        
         return false;
     }
     
     // Remember index for undo
     addedShapeIndex_ = slide->getShapeCount();
-    
     slide->addShape(std::move(shape));
-    
     executed_ = true;
     success_ = true;
     std::ostringstream oss;
-    oss << "[ACTION] Shape '" << shapeType_ << "' added to slide " << slideId_;
+    oss << "[ACTION] Shape '" << shapeType_ << "' (border: " << borderColor_ 
+        << ", fill: " << fillColor_ << ") added to slide " << slideId_;
     message_ = oss.str();
     output.writeLine(message_);
+
     return true;
 }
 
@@ -145,13 +152,16 @@ bool UndoableAddShapeCommand::undo() {
     }
     
     core::ISlide* slide = repository_->getSlide(slideId_);
-    if (!slide) return false;
+    if (!slide) {
+        return false;
+    }
     
     bool removed = slide->removeShape(addedShapeIndex_);
     if (removed) {
         std::ostringstream oss;
         oss << "[UNDO ACTION] Removed shape from slide " << slideId_;
         message_ = oss.str();
+    
         return true;
     }
     
@@ -165,6 +175,7 @@ bool UndoableAddShapeCommand::canUndo() const {
 std::string UndoableAddShapeCommand::getDescription() const {
     std::ostringstream oss;
     oss << "Add " << shapeType_ << " to slide " << slideId_;
+    
     return oss.str();
 }
 
