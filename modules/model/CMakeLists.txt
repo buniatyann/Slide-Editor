@@ -1,12 +1,10 @@
 add_library(model
     src/BoundingBox.cpp
+    src/Color.cpp
     src/Slide.cpp
-    src/SlideRepository.cpp
     src/SlideFactory.cpp
-    src/shapes/Circle.cpp
-    src/shapes/Rectangle.cpp
-    src/shapes/Triangle.cpp
-    src/shapes/Ellipse.cpp
+    src/SlideRepository.cpp
+    src/shapes/Shape.cpp
 )
 
 target_include_directories(model PUBLIC
