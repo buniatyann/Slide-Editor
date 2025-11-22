@@ -3,13 +3,17 @@
 namespace slideEditor::controller {
 
 std::unique_ptr<core::IMetaCommand> createCreateMetaCommand() {
-    auto creator = [](const std::vector<std::string>& args, void* context) 
+    auto creator = [](const std::vector<std::string>& args, void* contextPtr) 
         -> std::unique_ptr<core::ICommand> 
     {
-        auto* ctx = static_cast<CommandContext*>(context);
-        auto repo = static_cast<std::shared_ptr<core::ISlideRepository>*>(ctx->repository);
+        auto* context = static_cast<CommandContext*>(contextPtr);
+        if (!context->hasRepository()) {
+            throw std::runtime_error("Repository not available in context");
+        }
         
-        return std::make_unique<UndoableCreateCommand>(*repo, args[0], args[1], args[2]);
+        auto repo = context->getRepository();
+        // Arguments are already validated strings
+        return std::make_unique<UndoableCreateCommand>(repo, args[0], args[1], args[2]);
     };
     
     auto metaCmd = std::make_unique<MetaCommand>(
@@ -95,8 +99,8 @@ std::unique_ptr<core::IMetaCommand> createUndoMetaCommand() {
     {
         std::ignore = args;  // Unused
         auto* ctx = static_cast<CommandContext*>(context);
-        auto history = static_cast<std::shared_ptr<CommandHistory>*>(ctx->history);
-        auto view = static_cast<std::shared_ptr<core::IView>*>(ctx->view);
+        auto history = static_cast<std::shared_ptr<CommandHistory>*>(ctx->getHistory());
+        auto view = static_cast<std::shared_ptr<core::IView>*>(ctx->getView());
         
         return std::make_unique<UndoCommand>(*history, *view);
     };
@@ -188,8 +192,8 @@ std::unique_ptr<core::IMetaCommand> createDisplayMetaCommand() {
     {
         std::ignore = args;  // Unused
         auto* ctx = static_cast<CommandContext*>(context);
-        auto repo = static_cast<std::shared_ptr<core::ISlideRepository>*>(ctx->repository);
-        auto view = static_cast<std::shared_ptr<core::IView>*>(ctx->view);
+        auto repo = static_cast<std::shared_ptr<core::ISlideRepository>*>(ctx->getRepository());
+        auto view = static_cast<std::shared_ptr<core::IView>*>(ctx->getView());
         
         return std::make_unique<DisplayCommand>(*repo, *view);
     };
@@ -211,7 +215,7 @@ std::unique_ptr<core::IMetaCommand> createHelpMetaCommand() {
     {
         auto* ctx = static_cast<CommandContext*>(context);
         auto registry = static_cast<CommandRegistry*>(ctx->commandRegistry);
-        auto view = static_cast<std::shared_ptr<core::IView>*>(ctx->view);        
+        auto view = static_cast<std::shared_ptr<core::IView>*>(ctx->getView());        
         std::string specificCmd = args.empty() ? "" : args[0];
 
         return std::make_unique<HelpCommand>(registry, *view, specificCmd);

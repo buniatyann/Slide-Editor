@@ -1,6 +1,7 @@
 #include "controller/parser/CommandParser.hpp"
 #include "controller/CommandRegistry.hpp"  
 #include <algorithm>
+#include <stdexcept>
 
 namespace slideEditor::controller {
 
@@ -15,18 +16,21 @@ CommandParser::CommandParser(core::IInputStream* input)
     : lexer_(std::make_unique<Lexer>(input)),
       currentToken_(TokenType::END_OF_FILE),
       registry_(nullptr) {
-    advance();
+    advance(); // initialize currentToken_ with the first meaningful token 
 }
 
 void CommandParser::advance() {
+    // FIXED: This loop skips over END_OF_LINE tokens to get the next meaningful token
+    // The tokens come from lexer_->nextToken() which reads from the input stream
+    // The loop continues until we get a token that's not END_OF_LINE
     do {
         currentToken_ = lexer_->nextToken();
-    } while (currentToken_.type == TokenType::END_OF_LINE);
+    } while (currentToken_.type == TokenType::END_OF_LINE); 
 }
 
 bool CommandParser::expect(TokenType type) {
     if (currentToken_.type == type) {
-        advance();
+        advance(); 
         return true;
     }
     
@@ -37,6 +41,39 @@ bool CommandParser::match(TokenType type) {
     return currentToken_.type == type;
 }
 
+ParsedArgument CommandParser::parseIntArgument(const std::string& argName) {
+    if (!match(TokenType::NUMBER)) {
+        throw std::runtime_error("Expected integer for argument: " + argName);
+    }
+    
+    int value = currentToken_.asInt();
+    advance();  // Consume the token
+    
+    return ParsedArgument(value);
+}
+
+ParsedArgument CommandParser::parseDoubleArgument(const std::string& argName) {
+    if (!match(TokenType::NUMBER)) {
+        throw std::runtime_error("Expected number for argument: " + argName);
+    }
+    
+    double value = currentToken_.asDouble();
+    advance();  // Consume the token
+    
+    return ParsedArgument(value);
+}
+
+ParsedArgument CommandParser::parseStringArgument(const std::string& argName) {
+    if (!match(TokenType::IDENTIFIER) && !match(TokenType::NUMBER)) {
+        throw std::runtime_error("Expected value for argument: " + argName);
+    }
+    
+    std::string value = currentToken_.asString();
+    advance();  // Consume the token
+    
+    return ParsedArgument(value);
+}
+
 ParsedCommand CommandParser::parseCommand() {
     ParsedCommand result;
     if (match(TokenType::END_OF_FILE)) {
@@ -45,21 +82,24 @@ ParsedCommand CommandParser::parseCommand() {
 
         return result;
     }
-    
-    // Expect command token
+
     if (!match(TokenType::COMMAND)) {
         result.isValid = false;
         result.errorMessage = "Expected command keyword";
-
         return result;
     }
     
+    // Extract command name and normalize to lowercase
     std::string cmdName = currentToken_.asString();
     std::transform(cmdName.begin(), cmdName.end(), cmdName.begin(),
                    [](unsigned char c){ return std::tolower(c); });
     
     result.commandName = cmdName;
-    advance();  // Consume command
+    
+    // FIXED: advance() consumes the command token and moves to the first argument
+    // This is necessary because we've finished processing the command token
+    // and need to position at the next token for argument parsing
+    advance();
     
     // Get metadata from registry
     if (!registry_) {
@@ -73,65 +113,57 @@ ParsedCommand CommandParser::parseCommand() {
     if (!metaCmd) {
         result.isValid = false;
         result.errorMessage = "Unknown command: " + cmdName;
+
         return result;
     }
     
-    // Parse arguments based on metadata
+    // FIXED: Parse arguments based on metadata, storing typed values
+    // Each argument is parsed according to its expected type and stored
+    // as the correct type (int, double, or string) in ParsedArgument
     const auto& argInfo = metaCmd->getArgumentInfo();
-    for (size_t i = 0; i < argInfo.size(); ++i) {
-        const auto& arg = argInfo[i];
-        // Check if we have more tokens
-        if (match(TokenType::END_OF_FILE) || match(TokenType::END_OF_LINE)) {
-            if (arg.required) {
-                result.isValid = false;
-                result.errorMessage = "Missing required argument: " + arg.name;
+    try {
+        for (size_t i = 0; i < argInfo.size(); ++i) {
+            const auto& arg = argInfo[i];
+            // Check if we have more tokens
+            if (match(TokenType::END_OF_FILE) || match(TokenType::END_OF_LINE)) {
+                if (arg.required) {
+                    result.isValid = false;
+                    result.errorMessage = "Missing required argument: " + arg.name;
 
-                return result;
-            }
+                    return result;
+                }
 
-            break;  // Optional argument missing
+                break;  // Optional argument missing, stop parsing
+            }
+            
+            // FIXED: Parse based on expected type and store the actual parsed value
+            // Each parse method extracts the typed value and advances the token
+            ParsedArgument parsedArg;
+            if (arg.type == "int") {
+                parsedArg = parseIntArgument(arg.name);
+            } 
+            else if (arg.type == "double") {
+                parsedArg = parseDoubleArgument(arg.name);
+            } 
+            else {  
+                parsedArg = parseStringArgument(arg.name); // string or identifier
+            }
+            
+            result.arguments.push_back(parsedArg);
         }
-        
-        // Parse based on type
-        if (arg.type == "int") {
-            if (!match(TokenType::NUMBER)) {
-                result.isValid = false;
-                result.errorMessage = "Expected number for argument: " + arg.name;
-        
-                return result;
-            }
-        
-            result.arguments.push_back(std::to_string(currentToken_.asInt()));
-        } 
-        else if (arg.type == "double") {
-            if (!match(TokenType::NUMBER)) {
-                result.isValid = false;
-                result.errorMessage = "Expected number for argument: " + arg.name;
-        
-                return result;
-            }
-        
-            result.arguments.push_back(std::to_string(currentToken_.asDouble()));
-        } 
-        else {  // string or identifier
-            if (!match(TokenType::IDENTIFIER) && !match(TokenType::NUMBER)) {
-                result.isValid = false;
-                result.errorMessage = "Expected value for argument: " + arg.name;
-        
-                return result;
-            }
-        
-            result.arguments.push_back(currentToken_.asString());
-        }
-        
-        advance();
+    } catch (const std::exception& e) {
+        result.isValid = false;
+        result.errorMessage = e.what();
+
+        return result;
     }
     
-    // Validate using metadata
-    if (!metaCmd->validateArguments(result.arguments)) {
+    // Validate using metadata (optional additional validation)
+    auto argStrings = result.getArgumentStrings();
+    if (!metaCmd->validateArguments(argStrings)) {
         result.isValid = false;
         result.errorMessage = "Invalid arguments for command: " + cmdName;
-        
+
         return result;
     }
     
