@@ -4,6 +4,7 @@ add_library(controller
     src/CommandHistory.cpp
     src/CommandRegistry.cpp
     src/CommandContext.cpp
+    src/MetaCommand.cpp
     src/commands/Commands.cpp
     src/commands/CommandFactory.cpp
     src/commands/UndoableCommands.cpp           
