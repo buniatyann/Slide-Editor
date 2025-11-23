@@ -26,26 +26,47 @@ void CommandContext::setRegistry(CommandRegistry* registry) {
     registry_ = registry;
 }
 
+bool CommandContext::hasRepository() const {
+    return repository_ != nullptr;
+}
+
 std::shared_ptr<core::ISlideRepository> CommandContext::getRepository() const {
     return repository_;
+}
+
+bool CommandContext::hasSerializer() const {
+    return serializer_ != nullptr;
 }
 
 std::shared_ptr<core::ISerializer> CommandContext::getSerializer() const {
     return serializer_;
 }
 
+bool CommandContext::hasView() const {
+    return view_ != nullptr;
+}
+
 std::shared_ptr<core::IView> CommandContext::getView() const {
     return view_;
 }
 
-std::shared_ptr<CommandHistory> CommandContext::getHistory() const {
-    return history_;
+bool CommandContext::hasHistory() const {
+    return history_ != nullptr;
 }
 
-CommandRegistry* CommandContext::getRegistry() const {
+void* CommandContext::getHistory() const {
+    return history_.get();
+}
+
+bool CommandContext::hasRegistry() const {
+    return registry_ != nullptr;
+}
+
+void* CommandContext::getRegistry() const {
     return registry_;
 }
 
+// Validation
 bool CommandContext::isValid() const {
     return repository_ != nullptr &&
            serializer_ != nullptr &&
@@ -57,6 +78,7 @@ bool CommandContext::isValid() const {
 std::string CommandContext::getMissingDependencies() const {
     std::ostringstream oss;
     bool first = true;
+    
     if (!repository_) {
         oss << "Repository";
         first = false;
@@ -66,7 +88,7 @@ std::string CommandContext::getMissingDependencies() const {
         if (!first) {
             oss << ", ";
         }
-        
+
         oss << "Serializer";
         first = false;
     }
@@ -75,7 +97,7 @@ std::string CommandContext::getMissingDependencies() const {
         if (!first) {
             oss << ", ";
         }
-        
+
         oss << "View";
         first = false;
     }
@@ -84,7 +106,7 @@ std::string CommandContext::getMissingDependencies() const {
         if (!first) {
             oss << ", ";
         }
-        
+
         oss << "History";
         first = false;
     }
@@ -93,31 +115,20 @@ std::string CommandContext::getMissingDependencies() const {
         if (!first) {
             oss << ", ";
         }
-        
+
         oss << "Registry";
     }
     
     return oss.str();
 }
 
-bool CommandContext::hasRepository() const {
-    return repository_ != nullptr;
+
+std::shared_ptr<CommandHistory> CommandContext::getHistoryTyped() const {
+    return history_;
 }
 
-bool CommandContext::hasSerializer() const {
-    return serializer_ != nullptr;
-}
-
-bool CommandContext::hasView() const {
-    return view_ != nullptr;
-}
-
-bool CommandContext::hasHistory() const {
-    return history_ != nullptr;
-}
-
-bool CommandContext::hasRegistry() const {
-    return registry_ != nullptr;
+CommandRegistry* CommandContext::getRegistryTyped() const {
+    return registry_;
 }
 
 } // namespace slideEditor::controller
