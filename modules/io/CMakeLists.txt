@@ -1,5 +1,5 @@
 add_library(io
-    src/InputStream.cpp,
+    src/InputStream.cpp
     src/OutputStream.cpp
 )
 
