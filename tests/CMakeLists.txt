@@ -58,7 +58,7 @@ add_unit_test(OutputStreamTest io/OutputStreamTest.cpp)
 
 # View tests
 add_unit_test(SvgGeneratorTest view/SvgGeneratorTest.cpp)
-add_unit_test(CliViewTest view/CliViewTest.cpp)
+add_unit_test(CliViewTest view/CLIViewTest.cpp)
 
 # Serialization tests
 add_unit_test(JsonSerializerTest serialization/JsonSerializerTest.cpp)
