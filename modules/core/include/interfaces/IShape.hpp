@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <algorithm>
 
 namespace slideEditor::core {
 
