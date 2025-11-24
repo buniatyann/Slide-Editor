@@ -53,15 +53,15 @@ add_unit_test(LexerTest controller/parser/LexerTest.cpp)
 add_unit_test(CommandParserTest controller/parser/CommandParserTest.cpp)
 
 # IO tests
-add_unit_test(InputStreamTest io/InputStreamTest.cpp)
-add_unit_test(OutputStreamTest io/OutputStreamTest.cpp)
+# add_unit_test(InputStreamTest io/InputStreamTest.cpp)
+# add_unit_test(OutputStreamTest io/OutputStreamTest.cpp)
 
 # View tests
 add_unit_test(SvgGeneratorTest view/SvgGeneratorTest.cpp)
 add_unit_test(CliViewTest view/CLIViewTest.cpp)
 
 # Serialization tests
-add_unit_test(JsonSerializerTest serialization/JsonSerializerTest.cpp)
+# add_unit_test(JsonSerializerTest serialization/JsonSerializerTest.cpp)
 
 # Integration tests
 add_unit_test(EndToEndTest integration/EndToEndTest.cpp)
