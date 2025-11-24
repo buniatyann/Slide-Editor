@@ -70,7 +70,7 @@ std::string SvgGenerator::generateSlideSVG(const core::ISlide* slide, int slideN
     const auto& shapes = slide->getShapes();
     if (!shapes.empty()) {
         int shapesPerRow = std::min(5, static_cast<int>(shapes.size()));
-        int rows = (shapes.size() + shapesPerRow - 1) / shapesPerRow;
+        // int rows = (shapes.size() + shapesPerRow - 1) / shapesPerRow;
         for (size_t i = 0; i < shapes.size(); ++i) {
             int row = i / shapesPerRow;
             int col = i % shapesPerRow;
