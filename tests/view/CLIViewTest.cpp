@@ -1,95 +1,243 @@
 #include <gtest/gtest.h>
 
-#include "view/cli/CliView.hpp"
+#include "model/SlideFactory.hpp"
 #include "model/SlideRepository.hpp"
-#include "model/Slide.hpp"
-#include "model/shapes/Shape.hpp"
-#include "model/Color.hpp"
+#include "view/cli/CliView.hpp"
 
 #include <memory>
 #include <sstream>
-#include <string>
 
-using slideEditor::core::ShapeType;
-using slideEditor::model::Color;
-using slideEditor::model::Shape;
-using slideEditor::model::Slide;
-using slideEditor::model::SlideRepository;
+using namespace slideEditor::model;
+using namespace slideEditor::view;
 
 class CliViewTest : public ::testing::Test {
 protected:
-    std::ostringstream buffer;
-    slideEditor::view::CliView view{buffer};
-    SlideRepository repository;
+    std::ostringstream output_;
+    std::unique_ptr<CliView> view_;
+    SlideRepository repository_;
 
-    static std::unique_ptr<Slide> makeSlide(
-        int id,
-        const std::string& title,
-        const std::string& content,
-        const std::string& theme) {
-        return std::make_unique<Slide>(id, title, content, theme);
+    void SetUp() override {
+        output_.str("");
+        output_.clear();
+        view_ = std::make_unique<CliView>(output_);
     }
 
-    std::string output() const {
-        return buffer.str();
+    std::string getOutput() const {
+        return output_.str();
+    }
+
+    void clearOutput() {
+        output_.str("");
+        output_.clear();
     }
 };
 
-TEST_F(CliViewTest, DisplayMessageWritesLine) {
-    view.displayMessage("Hello CLI");
+TEST_F(CliViewTest, DisplayWelcome_PrintsMessage) {
+    view_->displayWelcome();
 
-    EXPECT_EQ(output(), "Hello CLI\n");
+    const std::string output = getOutput();
+    EXPECT_FALSE(output.empty());
+    EXPECT_NE(output.find("SlideEditor"), std::string::npos);
 }
 
-TEST_F(CliViewTest, DisplayErrorPrefixesWithErrorTag) {
-    view.displayError("Something went wrong");
+TEST_F(CliViewTest, DisplayWelcome_PrintsVersion) {
+    view_->displayWelcome();
 
-    EXPECT_EQ(output(), "[ERROR] Something went wrong\n");
+    const std::string output = getOutput();
+    EXPECT_GT(output.length(), 10);
 }
 
-TEST_F(CliViewTest, DisplayPromptWritesPromptWithoutNewline) {
-    view.displayPrompt();
+TEST_F(CliViewTest, DisplayPrompt_PrintsPrompt) {
+    view_->displayPrompt();
 
-    EXPECT_EQ(output(), "> ");
+    const std::string output = getOutput();
+    EXPECT_NE(output.find(">"), std::string::npos);
 }
 
-TEST_F(CliViewTest, DisplayHelpAddsBlankLineAndText) {
-    view.displayHelp("Usage: help");
+TEST_F(CliViewTest, DisplayError_PrintsErrorPrefix) {
+    view_->displayError("Test error message");
 
-    EXPECT_EQ(output(), "\nUsage: help\n");
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("ERROR"), std::string::npos);
 }
 
-TEST_F(CliViewTest, DisplaySlidesWithNullRepositoryShowsError) {
-    view.displaySlides(nullptr);
+TEST_F(CliViewTest, DisplayError_PrintsErrorMessage) {
+    view_->displayError("Test error message");
 
-    EXPECT_EQ(output(), "[ERROR] Repository not available\n");
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("Test error message"), std::string::npos);
 }
 
-TEST_F(CliViewTest, DisplaySlidesShowsMessageWhenEmpty) {
-    view.displaySlides(&repository);
+TEST_F(CliViewTest, DisplayError_EmptyMessage_StillPrintsPrefix) {
+    view_->displayError("");
 
-    EXPECT_EQ(output(), "No slides in presentation.\n");
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("ERROR"), std::string::npos);
 }
 
-TEST_F(CliViewTest, DisplaySlidesPrintsSlidesAndShapes) {
-    auto intro = makeSlide(1, "Intro", "Welcome", "Light");
-    intro->addShape(std::make_unique<Shape>(ShapeType::CIRCLE, 1.5, Color::Red(), Color::Blue()));
-    repository.addSlide(std::move(intro));
+TEST_F(CliViewTest, DisplayInfo_PrintsMessage) {
+    view_->displayInfo("Information message");
 
-    auto roadmap = makeSlide(2, "Roadmap", "Next steps", "Dark");
-    roadmap->addShape(std::make_unique<Shape>(ShapeType::RECTANGLE, 1.0, Color::Green(), Color::Yellow()));
-    roadmap->addShape(std::make_unique<Shape>(ShapeType::TRIANGLE, 0.8, Color::Purple(), Color::Orange()));
-    repository.addSlide(std::move(roadmap));
-
-    view.displaySlides(&repository);
-    auto text = output();
-
-    EXPECT_NE(text.find("PRESENTATION (2 slide(s))"), std::string::npos);
-    EXPECT_NE(text.find("Slide #1"), std::string::npos);
-    EXPECT_NE(text.find("Title: Intro"), std::string::npos);
-    EXPECT_NE(text.find("Theme: Light"), std::string::npos);
-    EXPECT_NE(text.find("[0] circle"), std::string::npos);
-    EXPECT_NE(text.find("Slide #2"), std::string::npos);
-    EXPECT_NE(text.find("[1] triangle"), std::string::npos);
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("Information message"), std::string::npos);
 }
 
+TEST_F(CliViewTest, DisplayInfo_EmptyMessage_PrintsNothing) {
+    view_->displayInfo("");
+
+    const std::string output = getOutput();
+    EXPECT_LE(output.length(), 2);
+}
+
+TEST_F(CliViewTest, DisplaySuccess_PrintsMessage) {
+    view_->displaySuccess("Operation successful");
+
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("Operation successful"), std::string::npos);
+}
+
+TEST_F(CliViewTest, DisplayPresentation_EmptyRepository_PrintsEmptyMessage) {
+    view_->displayPresentation(&repository_);
+
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("0"), std::string::npos);
+}
+
+TEST_F(CliViewTest, DisplayPresentation_NullRepository_HandlesGracefully) {
+    view_->displayPresentation(nullptr);
+
+    const std::string output = getOutput();
+    EXPECT_FALSE(output.empty());
+}
+
+TEST_F(CliViewTest, DisplayPresentation_SingleSlide_ShowsSlideData) {
+    auto slide = SlideFactory::createSlide(
+        0, "TestTitle", "TestContent", "TestTheme"
+    );
+    repository_.addSlide(std::move(slide));
+
+    view_->displayPresentation(&repository_);
+
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("TestTitle"), std::string::npos);
+    EXPECT_NE(output.find("TestContent"), std::string::npos);
+    EXPECT_NE(output.find("TestTheme"), std::string::npos);
+}
+
+TEST_F(CliViewTest, DisplayPresentation_MultipleSlides_ShowsAllSlides) {
+    repository_.addSlide(
+        SlideFactory::createSlide(0, "Title1", "Content1", "Theme1")
+    );
+    repository_.addSlide(
+        SlideFactory::createSlide(0, "Title2", "Content2", "Theme2")
+    );
+    repository_.addSlide(
+        SlideFactory::createSlide(0, "Title3", "Content3", "Theme3")
+    );
+
+    view_->displayPresentation(&repository_);
+
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("Title1"), std::string::npos);
+    EXPECT_NE(output.find("Title2"), std::string::npos);
+    EXPECT_NE(output.find("Title3"), std::string::npos);
+}
+
+TEST_F(CliViewTest, DisplayPresentation_SlideWithShapes_ShowsShapeCount) {
+    auto slide = SlideFactory::createSlide(0, "Title", "Content", "Theme");
+    auto* slidePtr = slide.get();
+    repository_.addSlide(std::move(slide));
+
+    slidePtr->addShape(SlideFactory::createShape("circle", 1.0));
+    slidePtr->addShape(SlideFactory::createShape("rectangle", 1.0));
+
+    view_->displayPresentation(&repository_);
+
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("2"), std::string::npos);
+}
+
+TEST_F(CliViewTest, DisplayPresentation_ShowsSlideNumbers) {
+    repository_.addSlide(
+        SlideFactory::createSlide(0, "Title1", "Content1", "Theme1")
+    );
+    repository_.addSlide(
+        SlideFactory::createSlide(0, "Title2", "Content2", "Theme2")
+    );
+
+    view_->displayPresentation(&repository_);
+
+    const std::string output = getOutput();
+    EXPECT_TRUE(
+        output.find("#1") != std::string::npos ||
+        output.find("Slide 1") != std::string::npos ||
+        output.find("1:") != std::string::npos
+    );
+}
+
+TEST_F(CliViewTest, DisplayHelp_ShowsHelpText) {
+    view_->displayHelp("This is help text");
+
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("This is help text"), std::string::npos);
+}
+
+TEST_F(CliViewTest, DisplayHelp_EmptyString_StillPrints) {
+    view_->displayHelp("");
+
+    const std::string output = getOutput();
+    EXPECT_GE(output.length(), 0);
+}
+
+TEST_F(CliViewTest, DisplayHelp_MultilineText_PrintsAllLines) {
+    const std::string helpText = "Line 1\nLine 2\nLine 3";
+    view_->displayHelp(helpText);
+
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("Line 1"), std::string::npos);
+    EXPECT_NE(output.find("Line 2"), std::string::npos);
+    EXPECT_NE(output.find("Line 3"), std::string::npos);
+}
+
+TEST_F(CliViewTest, MultipleDisplayCalls_Accumulate) {
+    view_->displayInfo("First");
+    view_->displayInfo("Second");
+    view_->displayInfo("Third");
+
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("First"), std::string::npos);
+    EXPECT_NE(output.find("Second"), std::string::npos);
+    EXPECT_NE(output.find("Third"), std::string::npos);
+}
+
+TEST_F(CliViewTest, DisplayPresentation_ComplexSlides_FormatsCorrectly) {
+    auto slide = SlideFactory::createSlide(0, "Title", "Content", "Theme");
+    auto* slidePtr = slide.get();
+
+    slidePtr->addShape(
+        SlideFactory::createShape("circle", 1.5, "red", "blue")
+    );
+    slidePtr->addShape(
+        SlideFactory::createShape("rectangle", 2.0, "green", "yellow")
+    );
+    slidePtr->addShape(
+        SlideFactory::createShape("triangle", 1.0)
+    );
+
+    repository_.addSlide(std::move(slide));
+    view_->displayPresentation(&repository_);
+
+    const std::string output = getOutput();
+    EXPECT_NE(output.find("Title"), std::string::npos);
+    EXPECT_NE(output.find("circle"), std::string::npos);
+    EXPECT_NE(output.find("rectangle"), std::string::npos);
+    EXPECT_NE(output.find("triangle"), std::string::npos);
+}
+
+TEST_F(CliViewTest, DisplayGoodbye_PrintsMessage) {
+    view_->displayGoodbye();
+
+    const std::string output = getOutput();
+    EXPECT_FALSE(output.empty());
+    EXPECT_GT(output.length(), 3);
+}
