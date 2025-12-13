@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-// #include "model/SlideFactory.hpp" why it doesn't work here but works in SlideRepoTest?
-#include "../../modules/model/include/model/SlideFactory.hpp"
+#include "model/SlideFactory.hpp"
+#include "model/Color.hpp"  
 
 using namespace slideEditor::model;
 using namespace slideEditor::core;
