@@ -22,14 +22,13 @@ public:
     
     bool canUndoAction() const;
     bool canRedoAction() const;
+    size_t getUndoableActionCount() const;
+    size_t getRedoableActionCount() const;
     
     std::string getLastActionToUndo() const;
     std::string getLastActionToRedo() const;
     
     void clearHistory();
-
-    size_t getUndoableActionCount() const;
-    size_t getRedoableActionCount() const;
 
 private:
     std::vector<std::unique_ptr<core::IUndoableCommand>> undoStack_;
