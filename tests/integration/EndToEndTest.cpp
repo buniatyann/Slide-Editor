@@ -1,138 +1,288 @@
 #include <gtest/gtest.h>
 
 #include "controller/CommandController.hpp"
-#include "io/InputStream.hpp"
 #include "model/SlideRepository.hpp"
 #include "serialization/JsonSerializer.hpp"
-#include "interfaces/ISlideRepository.hpp"
-#include "interfaces/ISlide.hpp"
+#include "view/cli/CliView.hpp"
 
-#include <algorithm>
-#include <filesystem>
+#include <fstream>
 #include <memory>
-#include <string>
-#include <vector>
+#include <sstream>
 
-namespace {
-
-class RecordingView : public slideEditor::core::IView {
-public:
-    struct DisplaySnapshot {
-        size_t slideCount{};
-        std::vector<std::string> titles;
-    };
-
-    void displayMessage(const std::string& message) override {
-        messages.push_back(message);
-    }
-
-    void displayError(const std::string& error) override {
-        errors.push_back(error);
-    }
-
-    void displaySlides(const slideEditor::core::ISlideRepository* repository) override {
-        DisplaySnapshot snapshot;
-        if (repository) {
-            snapshot.slideCount = repository->getSlideCount();
-            const auto& slides = repository->getAllSlides();
-            for (const auto& slide : slides) {
-                snapshot.titles.push_back(slide->getTitle());
-            }
-        }
-        displays.push_back(snapshot);
-    }
-
-    void displayHelp(const std::string& helpText) override {
-        helpOutputs.push_back(helpText);
-    }
-
-    void displayPrompt() override {
-        ++promptCount;
-    }
-
-    std::vector<std::string> messages;
-    std::vector<std::string> errors;
-    std::vector<std::string> helpOutputs;
-    std::vector<DisplaySnapshot> displays;
-    size_t promptCount = 0;
-};
-
-}  // namespace
+using namespace slideEditor;
 
 class EndToEndTest : public ::testing::Test {
 protected:
+    std::ostringstream viewOutput_;
+    std::shared_ptr<model::SlideRepository> repository_;
+    std::shared_ptr<serialization::JsonSerializer> serializer_;
+    std::shared_ptr<view::CliView> view_;
+    std::unique_ptr<controller::CommandController> controller_;
+
     void SetUp() override {
-        repository = std::make_shared<slideEditor::model::SlideRepository>();
-        serializer = std::make_shared<slideEditor::serialization::JsonSerializer>();
-        view = std::make_shared<RecordingView>();
-        input = std::make_shared<slideEditor::io::InputStream>("");
+        viewOutput_.str("");
 
-        controller = std::make_unique<slideEditor::controller::CommandController>(
-            repository,
-            serializer,
-            view,
-            input);
+        repository_ = std::make_shared<model::SlideRepository>();
+        serializer_ = std::make_shared<serialization::JsonSerializer>();
+        view_ = std::make_shared<view::CliView>(viewOutput_);
+
+        controller_ = std::make_unique<controller::CommandController>(
+            repository_, serializer_, view_
+        );
     }
 
-    bool run(const std::string& commandLine) {
-        return controller->processCommand(commandLine);
+    void TearDown() override {
+        std::remove("test_e2e.json");
+        std::remove("test_e2e.svg");
     }
 
-    std::shared_ptr<slideEditor::model::SlideRepository> repository;
-    std::shared_ptr<slideEditor::serialization::JsonSerializer> serializer;
-    std::shared_ptr<RecordingView> view;
-    std::shared_ptr<slideEditor::io::InputStream> input;
-    std::unique_ptr<slideEditor::controller::CommandController> controller;
+    bool executeCommand(const std::string& cmd) {
+        viewOutput_.str("");
+        return controller_->processCommandLine(cmd);
+    }
+
+    std::string getOutput() const {
+        return viewOutput_.str();
+    }
 };
 
-TEST_F(EndToEndTest, ExecutesActionsAndHistoryCommands) {
-    run("create Intro Content Theme");
-    ASSERT_EQ(repository->getSlideCount(), 1u);
+TEST_F(EndToEndTest, CreateSlide_Success) {
+    bool result = executeCommand("create TestTitle TestContent TestTheme");
 
-    run("addshape 1 circle 1.5 red blue");
-    auto* slide = repository->getSlide(1);
-    ASSERT_NE(slide, nullptr);
-    EXPECT_EQ(slide->getShapeCount(), 1u);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(repository_->getSlideCount(), 1);
 
-    run("display");
-    ASSERT_FALSE(view->displays.empty());
-    const auto& snapshot = view->displays.back();
-    EXPECT_EQ(snapshot.slideCount, 1u);
-    EXPECT_NE(std::find(snapshot.titles.begin(), snapshot.titles.end(), "Intro"),
-              snapshot.titles.end());
-
-    run("undo");
-    slide = repository->getSlide(1);
-    ASSERT_NE(slide, nullptr);
-    EXPECT_EQ(slide->getShapeCount(), 0u);
-
-    run("redo");
-    slide = repository->getSlide(1);
-    ASSERT_NE(slide, nullptr);
-    EXPECT_EQ(slide->getShapeCount(), 1u);
+    std::string output = getOutput();
+    EXPECT_NE(output.find("created"), std::string::npos);
 }
 
-TEST_F(EndToEndTest, SaveAndLoadRoundTripPersistsSlides) {
-    run("create Overview Content Theme");
-    run("addshape 1 rectangle 2 green yellow");
+TEST_F(EndToEndTest, CreateMultipleSlides_Success) {
+    executeCommand("create Title1 Content1 Theme1");
+    executeCommand("create Title2 Content2 Theme2");
+    executeCommand("create Title3 Content3 Theme3");
 
-    const std::string filename = "endtoend_autosave";
-    std::filesystem::path filepath = std::filesystem::current_path() / filename;
-    std::error_code ec;
-    std::filesystem::remove(filepath, ec);
+    EXPECT_EQ(repository_->getSlideCount(), 3);
+}
 
-    run("save " + filename);
-    ASSERT_TRUE(std::filesystem::exists(filepath));
-    ASSERT_GT(std::filesystem::file_size(filepath), 0u);
+TEST_F(EndToEndTest, CreateAndAddShape_Success) {
+    executeCommand("create TestTitle TestContent TestTheme");
+    bool result = executeCommand("addshape 1 circle 1.5");
 
-    repository->clear();
-    ASSERT_EQ(repository->getSlideCount(), 0u);
+    EXPECT_TRUE(result);
 
-    run("load " + filename);
-    ASSERT_EQ(repository->getSlideCount(), 1u);
-    auto* slide = repository->getSlide(1);
+    auto* slide = repository_->getSlide(1);
     ASSERT_NE(slide, nullptr);
-    EXPECT_EQ(slide->getShapeCount(), 1u);
+    EXPECT_EQ(slide->getShapeCount(), 1);
+}
 
-    std::filesystem::remove(filepath, ec);
+TEST_F(EndToEndTest, CreateAndAddMultipleShapes_Success) {
+    executeCommand("create TestTitle TestContent TestTheme");
+    executeCommand("addshape 1 circle 1.0");
+    executeCommand("addshape 1 rectangle 1.5");
+    executeCommand("addshape 1 triangle 2.0");
+
+    auto* slide = repository_->getSlide(1);
+    EXPECT_EQ(slide->getShapeCount(), 3);
+}
+
+TEST_F(EndToEndTest, CreateAddShapeAndUndo_Success) {
+    executeCommand("create TestTitle TestContent TestTheme");
+    executeCommand("addshape 1 circle 1.5");
+
+    auto* slide = repository_->getSlide(1);
+    EXPECT_EQ(slide->getShapeCount(), 1);
+
+    bool result = executeCommand("undo");
+
+    EXPECT_TRUE(result);
+    EXPECT_EQ(slide->getShapeCount(), 0);
+}
+
+TEST_F(EndToEndTest, UndoAndRedo_Success) {
+    executeCommand("create TestTitle TestContent TestTheme");
+    EXPECT_EQ(repository_->getSlideCount(), 1);
+
+    executeCommand("undo");
+    EXPECT_EQ(repository_->getSlideCount(), 0);
+
+    bool result = executeCommand("redo");
+
+    EXPECT_TRUE(result);
+    EXPECT_EQ(repository_->getSlideCount(), 1);
+}
+
+TEST_F(EndToEndTest, MultipleUndoRedo_Success) {
+    executeCommand("create S1 C1 T1");
+    executeCommand("create S2 C2 T2");
+    executeCommand("create S3 C3 T3");
+
+    EXPECT_EQ(repository_->getSlideCount(), 3);
+
+    executeCommand("undo");
+    executeCommand("undo");
+    EXPECT_EQ(repository_->getSlideCount(), 1);
+
+    executeCommand("redo");
+    EXPECT_EQ(repository_->getSlideCount(), 2);
+}
+
+TEST_F(EndToEndTest, CreateAndDisplay_Success) {
+    executeCommand("create TestTitle TestContent TestTheme");
+    bool result = executeCommand("display");
+
+    EXPECT_TRUE(result);
+
+    std::string output = getOutput();
+    EXPECT_NE(output.find("TestTitle"), std::string::npos);
+    EXPECT_NE(output.find("TestContent"), std::string::npos);
+
+    std::ifstream checkFile("test_e2e.json");
+    EXPECT_TRUE(checkFile.good());
+    checkFile.close();
+
+    repository_->clear();
+    EXPECT_EQ(repository_->getSlideCount(), 0);
+
+    executeCommand("load test_e2e.json");
+    EXPECT_EQ(repository_->getSlideCount(), 1);
+
+    auto* slide = repository_->getAllSlides().front().get();
+    EXPECT_EQ(slide->getTitle(), "TestTitle");
+}
+
+TEST_F(EndToEndTest, CreateMultipleSlidesWithShapes_Success) {
+    executeCommand("create Slide1 Content1 Theme1");
+    executeCommand("addshape 1 circle 1.0 red blue");
+    executeCommand("addshape 1 rectangle 1.5 green yellow");
+    executeCommand("create Slide2 Content2 Theme2");
+    executeCommand("addshape 2 triangle 2.0");
+
+    bool result = executeCommand("display");
+
+    EXPECT_TRUE(result);
+
+    std::string output = getOutput();
+    EXPECT_NE(output.find("Slide1"), std::string::npos);
+    EXPECT_NE(output.find("Slide2"), std::string::npos);
+    EXPECT_NE(output.find("circle"), std::string::npos);
+    EXPECT_NE(output.find("triangle"), std::string::npos);
+}
+
+TEST_F(EndToEndTest, ComplexWorkflow_CreateSaveLoadModify) {
+    executeCommand("create Title1 Content1 Theme1");
+    executeCommand("addshape 1 circle 1.0");
+    executeCommand("save test_e2e.json");
+
+    executeCommand("create Title2 Content2 Theme2");
+    EXPECT_EQ(repository_->getSlideCount(), 2);
+
+    executeCommand("load test_e2e.json");
+
+    EXPECT_EQ(repository_->getSlideCount(), 1);
+
+    auto* slide = repository_->getSlide(1);
+    EXPECT_EQ(slide->getTitle(), "Title1");
+    EXPECT_EQ(slide->getShapeCount(), 1);
+}
+
+TEST_F(EndToEndTest, RemoveShape_Success) {
+    executeCommand("create Test Test Test");
+    executeCommand("addshape 1 circle 1.0");
+    executeCommand("addshape 1 rectangle 1.0");
+
+    auto* slide = repository_->getSlide(1);
+    EXPECT_EQ(slide->getShapeCount(), 2);
+
+    executeCommand("removeshape 1 0");
+    EXPECT_EQ(slide->getShapeCount(), 1);
+}
+
+TEST_F(EndToEndTest, RemoveShapeAndUndo_Success) {
+    executeCommand("create Test Test Test");
+    executeCommand("addshape 1 circle 1.0");
+    executeCommand("removeshape 1 0");
+
+    auto* slide = repository_->getSlide(1);
+    EXPECT_EQ(slide->getShapeCount(), 0);
+
+    executeCommand("undo");
+    EXPECT_EQ(slide->getShapeCount(), 1);
+}
+
+TEST_F(EndToEndTest, ErrorHandling_InvalidCommand) {
+    bool result = executeCommand("invalidcommand");
+    EXPECT_TRUE(result);
+
+    std::string output = getOutput();
+    EXPECT_NE(output.find("ERROR"), std::string::npos);
+}
+
+TEST_F(EndToEndTest, ErrorHandling_MissingArguments) {
+    bool result = executeCommand("create Title");
+    EXPECT_TRUE(result);
+
+    std::string output = getOutput();
+    EXPECT_NE(output.find("Missing"), std::string::npos);
+}
+
+TEST_F(EndToEndTest, ErrorHandling_InvalidSlideId) {
+    bool result = executeCommand("addshape 999 circle 1.0");
+    EXPECT_TRUE(result);
+
+    std::string output = getOutput();
+    EXPECT_NE(output.find("ERROR"), std::string::npos);
+}
+
+TEST_F(EndToEndTest, ErrorHandling_InvalidShapeType) {
+    executeCommand("create Test Test Test");
+    bool result = executeCommand("addshape 1 invalidsshape 1.0");
+
+    EXPECT_TRUE(result);
+
+    std::string output = getOutput();
+    EXPECT_NE(output.find("ERROR"), std::string::npos);
+}
+
+TEST_F(EndToEndTest, Help_ShowsCommands) {
+    bool result = executeCommand("help");
+    EXPECT_TRUE(result);
+
+    std::string output = getOutput();
+    EXPECT_NE(output.find("create"), std::string::npos);
+    EXPECT_NE(output.find("addshape"), std::string::npos);
+}
+
+TEST_F(EndToEndTest, HelpSpecific_ShowsCommandHelp) {
+    bool result = executeCommand("help create");
+    EXPECT_TRUE(result);
+
+    std::string output = getOutput();
+    EXPECT_NE(output.find("create"), std::string::npos);
+}
+
+TEST_F(EndToEndTest, ExitCommand_StopsExecution) {
+    bool result = executeCommand("exit");
+    EXPECT_FALSE(result);
+}
+
+TEST_F(EndToEndTest, CompleteSession_MultipleOperations) {
+    executeCommand("create Slide1 Content1 Theme1");
+    executeCommand("addshape 1 circle 1.5 red blue");
+    executeCommand("addshape 1 rectangle 2.0");
+    executeCommand("create Slide2 Content2 Theme2");
+    executeCommand("addshape 2 triangle 1.0");
+
+    executeCommand("save test_e2e.json");
+
+    executeCommand("addshape 2 ellipse 1.5");
+    executeCommand("undo");
+    executeCommand("display");
+
+    EXPECT_EQ(repository_->getSlideCount(), 2);
+
+    auto* slide1 = repository_->getSlide(1);
+    auto* slide2 = repository_->getSlide(2);
+
+    EXPECT_EQ(slide1->getShapeCount(), 2);
+    EXPECT_EQ(slide2->getShapeCount(), 1);
 }
