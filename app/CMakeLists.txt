@@ -1,5 +1,5 @@
 add_executable(SlideEditor
-    main.cpp
+    src/main.cpp
 )
 
 target_link_libraries(SlideEditor PRIVATE
