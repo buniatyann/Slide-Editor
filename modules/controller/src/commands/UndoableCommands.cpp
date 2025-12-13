@@ -1,5 +1,5 @@
 #include "controller/commands/UndoableCommands.hpp"
-#include "../../model/SlideFactory.hpp"
+#include "../../model/include/model/SlideFactory.hpp"
 #include <sstream>
 
 namespace slideEditor::controller {
