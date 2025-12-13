@@ -6,9 +6,8 @@ add_library(controller
     src/CommandContext.cpp
     src/MetaCommand.cpp
     src/commands/Commands.cpp
-    src/commands/CommandFactory.cpp
-    src/commands/UndoableCommands.cpp           
-    src/commands/HistoryCommands.cpp 
+    src/commands/UndoableCommands.cpp
+    src/commands/HistoryCommands.cpp
     src/commands/MetaCommandDefinitions.cpp
     src/parser/CommandParser.cpp
     src/parser/Lexer.cpp
@@ -23,7 +22,9 @@ target_include_directories(controller PUBLIC
 target_link_libraries(controller PUBLIC 
     core 
     model
+    view
     io
+    serialization
 )
 
 message(STATUS "Configured module: controller")
