@@ -1,6 +1,6 @@
 add_library(view
     src/cli/CliView.cpp
-    src/SvgGenerator.cpp        
+    src/SvgGenerator.cpp
     src/BrowserOpener.cpp
 )
 
@@ -10,6 +10,7 @@ target_include_directories(view PUBLIC
 
 target_link_libraries(view PUBLIC 
     core
+    model
 )
 
 message(STATUS "Configured module: view")
